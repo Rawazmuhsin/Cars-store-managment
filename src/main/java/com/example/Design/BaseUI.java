@@ -513,7 +513,7 @@ public abstract class BaseUI extends JFrame {
      * Navigate to different screens based on menu item clicks
      * @param screenName Name of the screen to navigate to
      */
-    protected void navigateToScreen(String screenName) {
+   protected void navigateToScreen(String screenName) {
     dispose(); // Close the current window
     
     switch (screenName) {
@@ -539,11 +539,14 @@ public abstract class BaseUI extends JFrame {
         case "Economic Reports":
             SwingUtilities.invokeLater(() -> new EconomicUI(adminId).setVisible(true));
             break;
-        case "Expense Manager":  // Add this new case
+        case "Expense Manager":
             SwingUtilities.invokeLater(() -> new ExpenseManagerUI(adminId).setVisible(true));
             break;
         case "Audit Logs":
-            // SwingUtilities.invokeLater(() -> new AuditLogsUI(adminId).setVisible(true));
+            JOptionPane.showMessageDialog(this, 
+                "Audit Logs feature is coming soon!", 
+                "Coming Soon", 
+                JOptionPane.INFORMATION_MESSAGE);
             break;
         default:
             SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));

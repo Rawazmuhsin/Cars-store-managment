@@ -13,6 +13,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
@@ -221,33 +222,39 @@ public class DashboardUI extends BaseUI {
      * @param screenName Name of the screen to navigate to
      */
     private void navigateTo(String screenName) {
-        dispose(); // Close the current window
-        
-        switch (screenName) {
-            case "Car Inventory":
-                SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
-                break;
-            case "Add New Car":
-                SwingUtilities.invokeLater(() -> new AddCarUI(adminId).setVisible(true));
-                break;
-            case "Sold Cars":
-                SwingUtilities.invokeLater(() -> new SoldCarsUI(adminId).setVisible(true));
-                break;
-            case "Coming Soon":
-                SwingUtilities.invokeLater(() -> new ComingSoonUI(adminId).setVisible(true));
-                break;
-            case "Economic":
-                // SwingUtilities.invokeLater(() -> new EconomicUI(adminId).setVisible(true));
-                break;
-            case "Audit Logs":
-                // SwingUtilities.invokeLater(() -> new AuditLogsUI(adminId).setVisible(true));
-                break;
-            default:
-                // Stay on dashboard or show error
-                System.err.println("Unknown navigation target: " + screenName);
-                break;
-        }
+    dispose(); // Close the current window
+    
+    switch (screenName) {
+        case "Car Inventory":
+            SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
+            break;
+        case "Add New Car":
+            SwingUtilities.invokeLater(() -> new AddCarUI(adminId).setVisible(true));
+            break;
+        case "Sold Cars":
+            SwingUtilities.invokeLater(() -> new SoldCarsUI(adminId).setVisible(true));
+            break;
+        case "Coming Soon":
+            SwingUtilities.invokeLater(() -> new ComingSoonUI(adminId).setVisible(true));
+            break;
+        case "Economic":
+            SwingUtilities.invokeLater(() -> new EconomicUI(adminId).setVisible(true));
+            break;
+        case "Expense Manager":
+            SwingUtilities.invokeLater(() -> new ExpenseManagerUI(adminId).setVisible(true));
+            break;
+        case "Audit Logs":
+            JOptionPane.showMessageDialog(this, 
+                "Audit Logs feature is coming soon!", 
+                "Coming Soon", 
+                JOptionPane.INFORMATION_MESSAGE);
+            break;
+        default:
+            // Stay on dashboard or show error
+            System.err.println("Unknown navigation target: " + screenName);
+            break;
     }
+}
     
     
     /**
