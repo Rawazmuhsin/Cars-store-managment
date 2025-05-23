@@ -165,71 +165,82 @@ public class EconomicUI extends BaseUI {
     /**
      * Create header panel
      */
-    private JPanel createHeaderPanel() {
-        JPanel headerPanel = new JPanel();
-        headerPanel.setOpaque(false);
-        headerPanel.setLayout(new BorderLayout());
-        
-        JLabel headerLabel = new JLabel("Economic Management");
-        headerLabel.setFont(new Font("Arial", Font.BOLD, 26));
-        headerLabel.setForeground(new Color(50, 50, 50));
-        
-        JLabel subHeaderLabel = new JLabel("Financial analysis and expense management");
-        subHeaderLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        subHeaderLabel.setForeground(new Color(120, 120, 120));
-        
-        JPanel titlePanel = new JPanel();
-        titlePanel.setOpaque(false);
-        titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
-        titlePanel.add(headerLabel);
-        titlePanel.add(subHeaderLabel);
-        
-        // Buttons panel
-        JPanel buttonsPanel = new JPanel();
-        buttonsPanel.setOpaque(false);
-        buttonsPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        
-        // Add Expense button
-        JButton addExpenseButton = new JButton("+ Add Expense");
-        addExpenseButton.setBackground(PRIMARY_BLUE);
-        addExpenseButton.setForeground(Color.WHITE);
-        addExpenseButton.setFocusPainted(false);
-        addExpenseButton.setFont(new Font("Arial", Font.BOLD, 14));
-        addExpenseButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        addExpenseButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        addExpenseButton.addActionListener(e -> openExpenseManager());
-        addExpenseButton.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                addExpenseButton.setBackground(PRIMARY_BLUE.darker());
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                addExpenseButton.setBackground(PRIMARY_BLUE);
-            }
-        });
-        
-        // Export Report button
-        JButton exportButton = new JButton("Export Report");
-        exportButton.setBackground(PRIMARY_GREEN);
-        exportButton.setForeground(Color.WHITE);
-        exportButton.setFocusPainted(false);
-        exportButton.setFont(new Font("Arial", Font.BOLD, 14));
-        exportButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        exportButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        exportButton.addActionListener(e -> exportReport());
-        exportButton.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                exportButton.setBackground(PRIMARY_GREEN.darker());
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                exportButton.setBackground(PRIMARY_GREEN);
-            }
-        });
+   private JPanel createHeaderPanel() {
+    JPanel headerPanel = new JPanel();
+    headerPanel.setOpaque(false);
+    headerPanel.setLayout(new BorderLayout());
+    
+    JLabel headerLabel = new JLabel("Economic Management");
+    headerLabel.setFont(new Font("Arial", Font.BOLD, 26));
+    headerLabel.setForeground(new Color(50, 50, 50));
+    
+    JLabel subHeaderLabel = new JLabel("Financial analysis and expense management");
+    subHeaderLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+    subHeaderLabel.setForeground(new Color(120, 120, 120));
+    
+    JPanel titlePanel = new JPanel();
+    titlePanel.setOpaque(false);
+    titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
+    titlePanel.add(headerLabel);
+    titlePanel.add(subHeaderLabel);
+    
+    // Buttons panel
+    JPanel buttonsPanel = new JPanel();
+    buttonsPanel.setOpaque(false);
+    buttonsPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+    
+    // Add Expense button - Fixed styling
+    JButton addExpenseButton = new JButton("+ Add Expense");
+    addExpenseButton.setBackground(PRIMARY_BLUE);
+    addExpenseButton.setForeground(Color.WHITE);
+    addExpenseButton.setFocusPainted(false);
+    addExpenseButton.setFont(new Font("Arial", Font.BOLD, 14));
+    addExpenseButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+    addExpenseButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    addExpenseButton.setOpaque(true);  // Add this
+    addExpenseButton.setBorderPainted(false);  // Add this
+    
+    // For Mac compatibility
+    addExpenseButton.putClientProperty("JButton.buttonType", "segmented");
+    
+    addExpenseButton.addActionListener(e -> openExpenseManager());
+    addExpenseButton.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mouseEntered(MouseEvent e) {
+            addExpenseButton.setBackground(PRIMARY_BLUE.darker());
+        }
+        @Override
+        public void mouseExited(MouseEvent e) {
+            addExpenseButton.setBackground(PRIMARY_BLUE);
+        }
+    });
+    
+    // Export Report button - Fixed styling
+    JButton exportButton = new JButton("Export Report");
+    exportButton.setBackground(PRIMARY_GREEN);
+    exportButton.setForeground(Color.WHITE);
+    exportButton.setFocusPainted(false);
+    exportButton.setFont(new Font("Arial", Font.BOLD, 14));
+    exportButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+    exportButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    exportButton.setOpaque(true);  // Add this
+    exportButton.setBorderPainted(false);  // Add this
+    
+    // For Mac compatibility
+    exportButton.putClientProperty("JButton.buttonType", "segmented");
+    
+    exportButton.addActionListener(e -> exportReport());
+    exportButton.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mouseEntered(MouseEvent e) {
+            exportButton.setBackground(PRIMARY_GREEN.darker());
+        }
+        @Override
+        public void mouseExited(MouseEvent e) {
+            exportButton.setBackground(PRIMARY_GREEN);
+        }
+    });
+    
         
         buttonsPanel.add(addExpenseButton);
         buttonsPanel.add(exportButton);
@@ -383,6 +394,10 @@ public class EconomicUI extends BaseUI {
         customRangeButton.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         customRangeButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         customRangeButton.addActionListener(e -> showCustomDateDialog());
+           customRangeButton.setOpaque(true);  // Add this
+customRangeButton.setBorderPainted(false);  // Add this
+customRangeButton.setContentAreaFilled(true); 
+        
         
         // Refresh button
         JButton refreshButton = new JButton("🔄 Refresh");
@@ -392,6 +407,9 @@ public class EconomicUI extends BaseUI {
         refreshButton.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         refreshButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         refreshButton.addActionListener(e -> refreshFinancialData());
+        refreshButton.setOpaque(true);  // Add this
+refreshButton.setBorderPainted(false);  // Add this
+refreshButton.setContentAreaFilled(true); 
         
         filterControls.add(monthLabel);
         filterControls.add(monthCombo);
