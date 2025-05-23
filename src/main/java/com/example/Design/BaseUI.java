@@ -542,12 +542,10 @@ public abstract class BaseUI extends JFrame {
         case "Expense Manager":
             SwingUtilities.invokeLater(() -> new ExpenseManagerUI(adminId).setVisible(true));
             break;
-        case "Audit Logs":
-            JOptionPane.showMessageDialog(this, 
-                "Audit Logs feature is coming soon!", 
-                "Coming Soon", 
-                JOptionPane.INFORMATION_MESSAGE);
-            break;
+       case "Audit Logs":
+                SwingUtilities.invokeLater(() -> new AuditLogUI(adminId).setVisible(true));
+                break;
+           
         default:
             SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
     }

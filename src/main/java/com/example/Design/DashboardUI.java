@@ -221,40 +221,45 @@ public class DashboardUI extends BaseUI {
      * Navigate to different screens from dashboard
      * @param screenName Name of the screen to navigate to
      */
-    private void navigateTo(String screenName) {
-    dispose(); // Close the current window
-    
-    switch (screenName) {
-        case "Car Inventory":
-            SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
-            break;
-        case "Add New Car":
-            SwingUtilities.invokeLater(() -> new AddCarUI(adminId).setVisible(true));
-            break;
-        case "Sold Cars":
-            SwingUtilities.invokeLater(() -> new SoldCarsUI(adminId).setVisible(true));
-            break;
-        case "Coming Soon":
-            SwingUtilities.invokeLater(() -> new ComingSoonUI(adminId).setVisible(true));
-            break;
-        case "Economic":
-            SwingUtilities.invokeLater(() -> new EconomicUI(adminId).setVisible(true));
-            break;
-        case "Expense Manager":
-            SwingUtilities.invokeLater(() -> new ExpenseManagerUI(adminId).setVisible(true));
-            break;
-        case "Audit Logs":
-            JOptionPane.showMessageDialog(this, 
-                "Audit Logs feature is coming soon!", 
-                "Coming Soon", 
-                JOptionPane.INFORMATION_MESSAGE);
-            break;
-        default:
-            // Stay on dashboard or show error
-            System.err.println("Unknown navigation target: " + screenName);
-            break;
+     private void navigateTo(String screenName) {
+        // Log the navigation action
+        AuditLogUI.addAuditLog(
+            managerName,
+            "Navigation",
+            "Navigated from Dashboard to " + screenName,
+            "Success"
+        );
+        
+        dispose(); // Close the current window
+        
+        switch (screenName) {
+            case "Car Inventory":
+                SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
+                break;
+            case "Add New Car":
+                SwingUtilities.invokeLater(() -> new AddCarUI(adminId).setVisible(true));
+                break;
+            case "Sold Cars":
+                SwingUtilities.invokeLater(() -> new SoldCarsUI(adminId).setVisible(true));
+                break;
+            case "Coming Soon":
+                SwingUtilities.invokeLater(() -> new ComingSoonUI(adminId).setVisible(true));
+                break;
+            case "Economic":
+                SwingUtilities.invokeLater(() -> new EconomicUI(adminId).setVisible(true));
+                break;
+            case "Expense Manager":
+                SwingUtilities.invokeLater(() -> new ExpenseManagerUI(adminId).setVisible(true));
+                break;
+            case "Audit Logs":
+                SwingUtilities.invokeLater(() -> new AuditLogUI(adminId).setVisible(true));
+                break;
+            default:
+                System.err.println("Unknown navigation target: " + screenName);
+                break;
+        }
     }
-}
+    
     
     
     /**
