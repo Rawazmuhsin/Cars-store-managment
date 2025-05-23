@@ -8,6 +8,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,6 +24,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
 /**
@@ -83,11 +85,91 @@ public abstract class BaseUI extends JFrame {
         contentPanel = createContentPanel();
         add(contentPanel, BorderLayout.CENTER);
         
-        // Try to set icon
+        // Set application icon - try multiple possible paths
+        setApplicationIcon();
+    }
+    
+    /**
+     * Set the application icon with multiple fallback options
+     */
+   private void setApplicationIcon() {
+    String[] possiblePaths = {
+        "src/main/java/com/example/logo/ChatGPT Image May 23, 2025, 08_41_35 PM.png", // Your exact file
+        "src/main/java/com/example/logo/car_logo.png",     // Standard name
+        "logo/car_logo.png",                              // Standard path
+        "src/logo/car_logo.png",                          // Alternative path
+        "Logo/car_logo.png",                              // Capitalized Logo folder
+        "src/Logo/car_logo.png",                          // Capitalized in src
+        "resources/logo/car_logo.png",                    // Resources folder
+        "src/main/resources/logo/car_logo.png",           // Maven structure
+        "car_logo.png"                                    // Root directory
+    };
+    
+    boolean iconLoaded = false;
+    
+    for (String path : possiblePaths) {
         try {
-            setIconImage(new ImageIcon("Logo/car_logo.png").getImage());
+            java.io.File iconFile = new java.io.File(path);
+            if (iconFile.exists()) {
+                ImageIcon icon = new ImageIcon(path);
+                if (icon.getIconWidth() > 0) {
+                    setIconImage(icon.getImage());
+                    System.out.println("Successfully loaded icon from: " + path);
+                    iconLoaded = true;
+                    break;
+                }
+            }
         } catch (Exception e) {
-            System.err.println("Error loading icon: " + e.getMessage());
+            // Continue to next path
+        }
+    }
+    
+    if (!iconLoaded) {
+        System.err.println("Could not load application icon from any of the expected locations.");
+        System.err.println("Please ensure the logo file exists in one of these locations:");
+        for (String path : possiblePaths) {
+            System.err.println("  - " + path);
+        }
+        
+        // Create a simple default icon as fallback
+        createDefaultIcon();
+    }
+}
+
+    /**
+     * Create a simple default icon if no image file is found
+     */
+    private void createDefaultIcon() {
+        try {
+            // Create a simple 32x32 icon with CSM text
+            java.awt.image.BufferedImage iconImage = new java.awt.image.BufferedImage(32, 32, java.awt.image.BufferedImage.TYPE_INT_RGB);
+            java.awt.Graphics2D g2d = iconImage.createGraphics();
+            
+            // Set rendering hints for better quality
+            g2d.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            
+            // Fill background with dark blue
+            g2d.setColor(DARK_BLUE);
+            g2d.fillRect(0, 0, 32, 32);
+            
+            // Add CSM text
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 10));
+            java.awt.FontMetrics fm = g2d.getFontMetrics();
+            String text = "CSM";
+            int textWidth = fm.stringWidth(text);
+            int textHeight = fm.getHeight();
+            int x = (32 - textWidth) / 2;
+            int y = (32 - textHeight) / 2 + fm.getAscent();
+            g2d.drawString(text, x, y);
+            
+            g2d.dispose();
+            setIconImage(iconImage);
+            System.out.println("Created default CSM icon");
+            
+        } catch (Exception e) {
+            System.err.println("Could not create default icon: " + e.getMessage());
         }
     }
     
@@ -108,19 +190,8 @@ public abstract class BaseUI extends JFrame {
         logoPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
         logoPanel.setMaximumSize(new Dimension(250, 200));
         
-        // Create circular logo
-        JPanel circlePanel = new JPanel();
-        circlePanel.setPreferredSize(new Dimension(100, 100));
-        circlePanel.setMaximumSize(new Dimension(100, 100));
-        circlePanel.setBackground(DARK_BLUE);
-        circlePanel.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
-        circlePanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        JLabel logoText = new JLabel("CSM");
-        logoText.setForeground(Color.WHITE);
-        logoText.setFont(new Font("Arial", Font.BOLD, 24));
-        circlePanel.setLayout(new BorderLayout());
-        circlePanel.add(logoText, BorderLayout.CENTER);
+        // Create logo container - try to load image first, fallback to circle
+        JPanel logoContainer = createLogoContainer();
         
         JLabel titleLabel = new JLabel("CSM Manager");
         titleLabel.setForeground(Color.WHITE);
@@ -133,7 +204,7 @@ public abstract class BaseUI extends JFrame {
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         logoPanel.add(Box.createVerticalStrut(20));
-        logoPanel.add(circlePanel);
+        logoPanel.add(logoContainer);
         logoPanel.add(Box.createVerticalStrut(15));
         logoPanel.add(titleLabel);
         logoPanel.add(Box.createVerticalStrut(5));
@@ -209,6 +280,65 @@ public abstract class BaseUI extends JFrame {
         
         return sidebar;
     }
+    
+    /**
+     * Create logo container - either image or fallback circle
+     */
+   private JPanel createLogoContainer() {
+    JPanel container = new JPanel();
+    container.setBackground(DARK_BLUE);
+    container.setPreferredSize(new Dimension(100, 100));
+    container.setMaximumSize(new Dimension(100, 100));
+    container.setAlignmentX(Component.CENTER_ALIGNMENT);
+    container.setLayout(new BorderLayout());
+    
+    // Try to load logo image
+    JLabel logoLabel = new JLabel();
+    logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
+    logoLabel.setVerticalAlignment(SwingConstants.CENTER);
+    
+    boolean imageLoaded = false;
+    String[] possiblePaths = {
+        "src/main/java/com/example/logo/ChatGPT Image May 23, 2025, 08_41_35 PM.png", // Your exact file
+        "src/main/java/com/example/logo/car_logo.png",     // Standard name
+        "logo/car_logo.png",
+        "src/logo/car_logo.png",
+        "Logo/car_logo.png",
+        "src/Logo/car_logo.png",
+        "resources/logo/car_logo.png",
+        "car_logo.png"
+    };
+    
+    for (String path : possiblePaths) {
+        try {
+            java.io.File logoFile = new java.io.File(path);
+            if (logoFile.exists()) {
+                ImageIcon originalIcon = new ImageIcon(path);
+                if (originalIcon.getIconWidth() > 0) {
+                    // Scale the image to fit the container
+                    Image scaledImage = originalIcon.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);
+                    logoLabel.setIcon(new ImageIcon(scaledImage));
+                    imageLoaded = true;
+                    System.out.println("Successfully loaded sidebar logo from: " + path);
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            // Continue to next path
+        }
+    }
+    
+    if (!imageLoaded) {
+        // Fallback to the original circular design with CSM text
+        container.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
+        logoLabel.setText("CSM");
+        logoLabel.setForeground(Color.WHITE);
+        logoLabel.setFont(new Font("Arial", Font.BOLD, 24));
+    }
+    
+    container.add(logoLabel, BorderLayout.CENTER);
+    return container;
+}
     
     /**
      * Add menu items to the sidebar
@@ -383,40 +513,39 @@ public abstract class BaseUI extends JFrame {
      * Navigate to different screens based on menu item clicks
      * @param screenName Name of the screen to navigate to
      */
-   protected void navigateToScreen(String screenName) {
-    dispose(); // Close the current window
-    
-    switch (screenName) {
-        case "Dashboard":
-            SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
-            break;
-        case "Cars Available":
-        case "Car Inventory":
-            SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
-            break;
-        case "Add New Car":
-            // SwingUtilities.invokeLater(() -> new AddCarUI(adminId).setVisible(true));
-            break;
-        case "Sold Cars":
-        case "Sales History":
-            SwingUtilities.invokeLater(() -> new SoldCarsUI(adminId).setVisible(true));
-            break;
-        case "Coming Soon":
-        case "Coming Soon Cars":
-            SwingUtilities.invokeLater(() -> new ComingSoonUI(adminId).setVisible(true));
-            break;
-        case "Economic":
-        case "Economic Reports":
-            // SwingUtilities.invokeLater(() -> new EconomicUI(adminId).setVisible(true));
-            break;
-        case "Audit Logs":
-            // SwingUtilities.invokeLater(() -> new AuditLogsUI(adminId).setVisible(true));
-            break;
-        default:
-            SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
+    protected void navigateToScreen(String screenName) {
+        dispose(); // Close the current window
+        
+        switch (screenName) {
+            case "Dashboard":
+                SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
+                break;
+            case "Cars Available":
+            case "Car Inventory":
+                SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
+                break;
+            case "Add New Car":
+                SwingUtilities.invokeLater(() -> new AddCarUI(adminId).setVisible(true));
+                break;
+            case "Sold Cars":
+            case "Sales History":
+                SwingUtilities.invokeLater(() -> new SoldCarsUI(adminId).setVisible(true));
+                break;
+            case "Coming Soon":
+            case "Coming Soon Cars":
+                SwingUtilities.invokeLater(() -> new ComingSoonUI(adminId).setVisible(true));
+                break;
+            case "Economic":
+            case "Economic Reports":
+                // SwingUtilities.invokeLater(() -> new EconomicUI(adminId).setVisible(true));
+                break;
+            case "Audit Logs":
+                // SwingUtilities.invokeLater(() -> new AuditLogsUI(adminId).setVisible(true));
+                break;
+            default:
+                SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
+        }
     }
-}
-
     
     /**
      * Custom rounded panel with background color

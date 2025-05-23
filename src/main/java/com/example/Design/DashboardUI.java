@@ -228,7 +228,7 @@ public class DashboardUI extends BaseUI {
                 SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
                 break;
             case "Add New Car":
-                // SwingUtilities.invokeLater(() -> new AddCarUI(adminId).setVisible(true));
+                SwingUtilities.invokeLater(() -> new AddCarUI(adminId).setVisible(true));
                 break;
             case "Sold Cars":
                 SwingUtilities.invokeLater(() -> new SoldCarsUI(adminId).setVisible(true));
