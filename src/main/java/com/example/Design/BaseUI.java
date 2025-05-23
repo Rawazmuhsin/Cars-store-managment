@@ -514,39 +514,43 @@ public abstract class BaseUI extends JFrame {
      * @param screenName Name of the screen to navigate to
      */
     protected void navigateToScreen(String screenName) {
-        dispose(); // Close the current window
-        
-        switch (screenName) {
-            case "Dashboard":
-                SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
-                break;
-            case "Cars Available":
-            case "Car Inventory":
-                SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
-                break;
-            case "Add New Car":
-                SwingUtilities.invokeLater(() -> new AddCarUI(adminId).setVisible(true));
-                break;
-            case "Sold Cars":
-            case "Sales History":
-                SwingUtilities.invokeLater(() -> new SoldCarsUI(adminId).setVisible(true));
-                break;
-            case "Coming Soon":
-            case "Coming Soon Cars":
-                SwingUtilities.invokeLater(() -> new ComingSoonUI(adminId).setVisible(true));
-                break;
-            case "Economic":
-            case "Economic Reports":
-                // SwingUtilities.invokeLater(() -> new EconomicUI(adminId).setVisible(true));
-                break;
-            case "Audit Logs":
-                // SwingUtilities.invokeLater(() -> new AuditLogsUI(adminId).setVisible(true));
-                break;
-            default:
-                SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
-        }
-    }
+    dispose(); // Close the current window
     
+    switch (screenName) {
+        case "Dashboard":
+            SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
+            break;
+        case "Cars Available":
+        case "Car Inventory":
+            SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
+            break;
+        case "Add New Car":
+            SwingUtilities.invokeLater(() -> new AddCarUI(adminId).setVisible(true));
+            break;
+        case "Sold Cars":
+        case "Sales History":
+            SwingUtilities.invokeLater(() -> new SoldCarsUI(adminId).setVisible(true));
+            break;
+        case "Coming Soon":
+        case "Coming Soon Cars":
+            SwingUtilities.invokeLater(() -> new ComingSoonUI(adminId).setVisible(true));
+            break;
+        case "Economic":
+        case "Economic Reports":
+            SwingUtilities.invokeLater(() -> new EconomicUI(adminId).setVisible(true));
+            break;
+        case "Expense Manager":  // Add this new case
+            SwingUtilities.invokeLater(() -> new ExpenseManagerUI(adminId).setVisible(true));
+            break;
+        case "Audit Logs":
+            // SwingUtilities.invokeLater(() -> new AuditLogsUI(adminId).setVisible(true));
+            break;
+        default:
+            SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
+    }
+}
+
+
     /**
      * Custom rounded panel with background color
      */

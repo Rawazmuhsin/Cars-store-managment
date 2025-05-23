@@ -249,6 +249,7 @@ public class DashboardUI extends BaseUI {
         }
     }
     
+    
     /**
      * Create a quick action button
      * @param text Button text
