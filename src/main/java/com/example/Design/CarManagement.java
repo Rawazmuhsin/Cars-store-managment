@@ -93,6 +93,7 @@ public class CarManagement extends BaseUI {
         addMenuItem(menuPanel, "Audit Logs", false);
     }
     
+    
     /**
      * Create the content panel for car management
      * Overrides the method in BaseUI

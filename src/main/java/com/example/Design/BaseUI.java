@@ -383,39 +383,40 @@ public abstract class BaseUI extends JFrame {
      * Navigate to different screens based on menu item clicks
      * @param screenName Name of the screen to navigate to
      */
-    protected void navigateToScreen(String screenName) {
-        dispose(); // Close the current window
-        
-        switch (screenName) {
-            case "Dashboard":
-                SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
-                break;
-            case "Cars Available":
-            case "Car Inventory":
-                SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
-                break;
-            case "Add New Car":
-                // Add implementation or create AddCarUI class
-                break;
-            case "Sold Cars":
-            case "Sales History":
-                // Add implementation or create SalesHistoryUI class
-                break;
-            case "Coming Soon":
-            case "Coming Soon Cars":
-                // Add implementation or create ComingSoonCarsUI class
-                break;
-            case "Economic":
-            case "Economic Reports":
-                // Add implementation or create ReportsUI class
-                break;
-            case "Audit Logs":
-                // Add implementation or create AuditLogsUI class
-                break;
-            default:
-                SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
-        }
+   protected void navigateToScreen(String screenName) {
+    dispose(); // Close the current window
+    
+    switch (screenName) {
+        case "Dashboard":
+            SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
+            break;
+        case "Cars Available":
+        case "Car Inventory":
+            SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
+            break;
+        case "Add New Car":
+            // SwingUtilities.invokeLater(() -> new AddCarUI(adminId).setVisible(true));
+            break;
+        case "Sold Cars":
+        case "Sales History":
+            SwingUtilities.invokeLater(() -> new SoldCarsUI(adminId).setVisible(true));
+            break;
+        case "Coming Soon":
+        case "Coming Soon Cars":
+            SwingUtilities.invokeLater(() -> new ComingSoonUI(adminId).setVisible(true));
+            break;
+        case "Economic":
+        case "Economic Reports":
+            // SwingUtilities.invokeLater(() -> new EconomicUI(adminId).setVisible(true));
+            break;
+        case "Audit Logs":
+            // SwingUtilities.invokeLater(() -> new AuditLogsUI(adminId).setVisible(true));
+            break;
+        default:
+            SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
     }
+}
+
     
     /**
      * Custom rounded panel with background color
