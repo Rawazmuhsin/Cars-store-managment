@@ -1,6 +1,8 @@
 package com.example.Design;
 
 import java.awt.BorderLayout;
+// Add this import if CarDAO is in another package, adjust the package as needed
+import com.example.OOP.backend.CarDAO;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
@@ -1123,4 +1125,19 @@ public void refreshCarInventory() {
             new CarManagement().setVisible(true);
         });
     }
+    
+    // private void loadCarInventory() {
+    //     try {
+    //         CarDAO carDAO = new CarDAO();
+    //         // Replace with the correct method from CarDAO that fetches all cars
+    //         List<Car> carList = carDAO.fetchAllCars(); // Fetch from DB
+
+    //         // Update your table model or UI with carList
+    //         updateCarTable(carList);
+    //     } catch (Exception ex) {
+    //         JOptionPane.showMessageDialog(this, "Error loading cars: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    //     }
+    // }
+
+    // Call loadCarInventory() in your constructor or refresh method
 }

@@ -18,6 +18,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.sql.Timestamp;
+import java.math.BigDecimal;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -38,9 +40,12 @@ import javax.swing.border.EmptyBorder;
 
 /**
  * Sold Cars UI class that extends BaseUI to inherit common UI elements
- * Displays sold cars as cards similar to CarManagement and ComingSoonUI
+ * Displays sold cars as cards and integrates with database through SoldCarsIntegration
  */
 public class SoldCarsUI extends BaseUI {
+    
+    // Integration with backend
+    private SoldCarsIntegration integration;
     
     // Filter panels with active state indicators
     private RoundedPanel datePeriodCard;
@@ -59,10 +64,7 @@ public class SoldCarsUI extends BaseUI {
     private List<SoldCar> soldCars;
     
     // Summary statistics
-    private int totalSoldCount = 0;
-    private double totalSalesValue = 0;
-    private double averagePrice = 0;
-    private int monthlySalesCount = 0;
+    private SoldCarsIntegration.SalesStatistics salesStats;
 
     /**
      * Constructor with admin ID
@@ -70,6 +72,8 @@ public class SoldCarsUI extends BaseUI {
      */
     public SoldCarsUI(int adminId) {
         super(adminId);
+        this.integration = SoldCarsIntegration.getInstance();
+        this.integration.setCurrentStaffId(adminId);
     }
     
     /**
@@ -77,6 +81,8 @@ public class SoldCarsUI extends BaseUI {
      */
     public SoldCarsUI() {
         super();
+        this.integration = SoldCarsIntegration.getInstance();
+        this.integration.setCurrentStaffId(1); // Default staff ID
     }
     
     /**
@@ -199,11 +205,8 @@ public class SoldCarsUI extends BaseUI {
         contentPanel.setOpaque(false);
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         
-        // Initialize sample data
-        initializeSampleData();
-        
-        // Calculate statistics
-        calculateSalesStatistics();
+        // Load data from database
+        loadSoldCarsData();
         
         // Sales statistics overview
         JPanel statsPanel = new JPanel();
@@ -213,11 +216,15 @@ public class SoldCarsUI extends BaseUI {
         statsPanel.setMaximumSize(new Dimension(1200, 120));
         statsPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 25, 0));
         
-        // Create overview cards
-        JPanel totalSoldCard = createOverviewCard("Total Cars Sold", Integer.toString(totalSoldCount), PRIMARY_BLUE);
-        JPanel totalValueCard = createOverviewCard("Total Sales Value", formatCurrency(totalSalesValue), PRIMARY_GREEN);
-        JPanel avgPriceCard = createOverviewCard("Average Sale Price", formatCurrency(averagePrice), PRIMARY_YELLOW);
-        JPanel monthlySalesCard = createOverviewCard("Monthly Sales", Integer.toString(monthlySalesCount), new Color(156, 39, 176)); // Purple
+        // Create overview cards using data from database
+        JPanel totalSoldCard = createOverviewCard("Total Cars Sold", 
+            Integer.toString(salesStats.totalSoldCount), PRIMARY_BLUE);
+        JPanel totalValueCard = createOverviewCard("Total Sales Value", 
+            formatCurrency(salesStats.totalSalesValue), PRIMARY_GREEN);
+        JPanel avgPriceCard = createOverviewCard("Average Sale Price", 
+            formatCurrency(salesStats.averagePrice), PRIMARY_YELLOW);
+        JPanel monthlySalesCard = createOverviewCard("Monthly Sales", 
+            Integer.toString(salesStats.monthlySalesCount), new Color(156, 39, 176)); // Purple
         
         statsPanel.add(totalSoldCard);
         statsPanel.add(totalValueCard);
@@ -289,43 +296,53 @@ public class SoldCarsUI extends BaseUI {
     }
     
     /**
-     * Initialize sample data for sold cars
+     * Load sold cars data from database
      */
-    private void initializeSampleData() {
-        soldCars = new ArrayList<>();
-        
-        // Get sold cars from the shared CarStatusManager
-        CarStatusManager carManager = CarStatusManager.getInstance();
-        List<CarStatusManager.SoldCarRecord> soldRecords = carManager.getSoldCars();
-        
-        // Convert to SoldCar format
-        for (CarStatusManager.SoldCarRecord record : soldRecords) {
-            CarManagement.Car car = record.getCar();
-            SoldCar soldCar = new SoldCar(
-                car.getId(),
-                car.getModel(),
-                car.getYear(),
-                car.getType(),
-                car.getColor(),
-                record.getSalePrice(),
-                record.getSaleDate(),
-                record.getBuyerName(),
-                record.getBuyerContact(),
-                record.getPaymentMethod(),
-                car.getImagePath()
-            );
-            soldCars.add(soldCar);
-        }
-        
-        // Add additional sample data if needed
-        if (soldCars.size() < 8) {
-            soldCars.add(new SoldCar(11, "Toyota Camry", "2023", "Sedan", "Silver", "$29,500", "Jan 15, 2025", "John Smith", "(555) 101-2001", "Financing", "placeholder_toyota.jpg"));
-            soldCars.add(new SoldCar(12, "Honda CR-V", "2023", "SUV", "White", "$32,800", "Jan 23, 2025", "Emma Johnson", "(555) 102-2002", "Cash", "placeholder_honda.jpg"));
-            soldCars.add(new SoldCar(13, "Ford F-150", "2022", "Truck", "Black", "$47,200", "Feb 02, 2025", "Michael Brown", "(555) 103-2003", "Financing", "placeholder_ford.jpg"));
-            soldCars.add(new SoldCar(14, "Chevrolet Malibu", "2022", "Sedan", "Red", "$27,500", "Mar 05, 2025", "Robert Wilson", "(555) 105-2005", "Cash", "placeholder_chevrolet.jpg"));
-            soldCars.add(new SoldCar(15, "Tesla Model 3", "2023", "Electric", "Black", "$49,800", "Mar 18, 2025", "Jennifer Lee", "(555) 106-2006", "Credit Card", "placeholder_tesla.jpg"));
-            soldCars.add(new SoldCar(16, "Jeep Wrangler", "2023", "SUV", "Green", "$39,500", "Apr 02, 2025", "David Garcia", "(555) 107-2007", "Financing", "placeholder_jeep.jpg"));
-            soldCars.add(new SoldCar(17, "Mercedes-Benz C-Class", "2023", "Sedan", "Gray", "$52,800", "May 10, 2025", "Patricia Anderson", "(555) 110-2010", "Bank Transfer", "placeholder_mercedes.jpg"));
+    private void loadSoldCarsData() {
+        try {
+            // Get statistics from integration
+            salesStats = integration.getSalesStatistics();
+            
+            // Get sold cars data from integration
+            List<Object[]> soldCarsData = integration.getSoldCarsData();
+            soldCars = new ArrayList<>();
+            
+            // Convert database rows to SoldCar objects
+            for (int i = 0; i < soldCarsData.size(); i++) {
+                Object[] row = soldCarsData.get(i);
+                
+                // Create SoldCar from database row data
+                // row format: [model, year, type, date, price, buyer, "View"]
+                SoldCar soldCar = new SoldCar(
+                    i + 1, // ID
+                    (String) row[0], // model
+                    (String) row[1], // year
+                    (String) row[2], // type
+                    "N/A", // color (not in database query)
+                    (String) row[4], // sale price
+                    (String) row[3], // sale date
+                    (String) row[5], // buyer name
+                    "N/A", // buyer contact (not in database query)
+                    "N/A", // payment method (not in database query)
+                    "placeholder_car.jpg" // image path
+                );
+                
+                soldCars.add(soldCar);
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error loading sold cars data: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Initialize empty data if error occurs
+            soldCars = new ArrayList<>();
+            salesStats = new SoldCarsIntegration.SalesStatistics();
+            
+            // Show error message
+            JOptionPane.showMessageDialog(this,
+                "Error loading sold cars data from database.\n" + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
         }
     }
     
@@ -347,6 +364,15 @@ public class SoldCarsUI extends BaseUI {
         for (SoldCar car : soldCars) {
             JPanel carCard = createCarCard(car);
             gridPanel.add(carCard);
+        }
+        
+        // If no sold cars, show message
+        if (soldCars.isEmpty()) {
+            JLabel noDataLabel = new JLabel("No sold cars found in database");
+            noDataLabel.setFont(new Font("Arial", Font.ITALIC, 16));
+            noDataLabel.setForeground(new Color(120, 120, 120));
+            noDataLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            gridPanel.add(noDataLabel);
         }
         
         gridContainer.add(gridPanel);
@@ -411,12 +437,6 @@ public class SoldCarsUI extends BaseUI {
         yearTypeLabel.setForeground(new Color(120, 120, 120));
         yearTypeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
-        // Car color
-        JLabel colorLabel = new JLabel("Color: " + car.getColor());
-        colorLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        colorLabel.setForeground(new Color(100, 100, 100));
-        colorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
         // Sale price
         JLabel priceLabel = new JLabel(car.getSalePrice());
         priceLabel.setFont(new Font("Arial", Font.BOLD, 16));
@@ -475,8 +495,6 @@ public class SoldCarsUI extends BaseUI {
         infoPanel.add(nameLabel);
         infoPanel.add(Box.createVerticalStrut(5));
         infoPanel.add(yearTypeLabel);
-        infoPanel.add(Box.createVerticalStrut(3));
-        infoPanel.add(colorLabel);
         infoPanel.add(Box.createVerticalStrut(8));
         infoPanel.add(priceLabel);
         infoPanel.add(Box.createVerticalStrut(5));
@@ -569,8 +587,38 @@ public class SoldCarsUI extends BaseUI {
      * Show sale details dialog
      */
     private void showSaleDetails(SoldCar car) {
-        dispose(); // Close current window
-        SwingUtilities.invokeLater(() -> new ShowSoldCarUI(car, adminId).setVisible(true));
+        // Try to get the actual Sale object from database
+        try {
+            com.example.OOP.backend.Sale sale = integration.getSaleByIndex(car.getId() - 1);
+            if (sale != null) {
+                // Create detailed dialog with sale information
+                JDialog detailDialog = new JDialog(this, "Sale Details", true);
+                detailDialog.setSize(500, 600);
+                detailDialog.setLocationRelativeTo(this);
+                
+                JPanel mainPanel = new JPanel();
+                mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+                mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+                
+                // Add sale details
+                mainPanel.add(new JLabel("Car: " + car.getModel() + " " + car.getYear()));
+                mainPanel.add(new JLabel("Buyer: " + car.getBuyerName()));
+                mainPanel.add(new JLabel("Sale Price: " + car.getSalePrice()));
+                mainPanel.add(new JLabel("Sale Date: " + car.getSaleDate()));
+                mainPanel.add(new JLabel("Payment Method: " + (sale.getPaymentMethod() != null ? sale.getPaymentMethod() : "N/A")));
+                
+                JButton closeButton = new JButton("Close");
+                closeButton.addActionListener(e -> detailDialog.dispose());
+                mainPanel.add(closeButton);
+                
+                detailDialog.add(mainPanel);
+                detailDialog.setVisible(true);
+            } else {
+                JOptionPane.showMessageDialog(this, "Sale details not found", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading sale details: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
     
     /**
@@ -645,7 +693,7 @@ public class SoldCarsUI extends BaseUI {
         JLabel endDateLabel = new JLabel("End Date:");
         endDateLabel.setPreferredSize(new Dimension(100, 25));
         
-        SpinnerDateModel endDateModel = new SpinnerDateModel(today, null, null, java.util.Calendar.DAY_OF_MONTH);
+SpinnerDateModel endDateModel = new SpinnerDateModel(today, null, null, java.util.Calendar.DAY_OF_MONTH);
         JSpinner endDateSpinner = new JSpinner(endDateModel);
         endDateSpinner.setEditor(new JSpinner.DateEditor(endDateSpinner, "MMM dd, yyyy"));
         endDateSpinner.setPreferredSize(new Dimension(150, 25));
@@ -653,49 +701,42 @@ public class SoldCarsUI extends BaseUI {
         endDatePanel.add(endDateLabel);
         endDatePanel.add(endDateSpinner);
         
-        // Add components
-        mainPanel.add(titleLabel);
-        mainPanel.add(Box.createVerticalStrut(15));
-        mainPanel.add(startDatePanel);
-        mainPanel.add(Box.createVerticalStrut(10));
-        mainPanel.add(endDatePanel);
-        mainPanel.add(Box.createVerticalStrut(20));
-        
         // Buttons panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
-        JButton cancelButton = new JButton("Cancel");
-        cancelButton.addActionListener(e -> dateDialog.dispose());
+        JPanel buttonsPanel = new JPanel(new FlowLayout());
+        buttonsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JButton applyButton = new JButton("Apply Filter");
         applyButton.setBackground(PRIMARY_BLUE);
         applyButton.setForeground(Color.WHITE);
+        applyButton.setFocusPainted(false);
         applyButton.addActionListener(e -> {
             Date startDate = (Date) startDateSpinner.getValue();
             Date endDate = (Date) endDateSpinner.getValue();
             
-            if (startDate.before(endDate) || startDate.equals(endDate)) {
-                SimpleDateFormat formatter = new SimpleDateFormat("MMM dd, yyyy");
-                datePeriodFilterLabel.setText("Filter: " + formatter.format(startDate) + " - " + formatter.format(endDate));
-                dateDialog.dispose();
-                activeFilters.put("startDate", startDate);
-                activeFilters.put("endDate", endDate);
-                applyFilters();
-            } else {
-                JOptionPane.showMessageDialog(dateDialog, 
-                    "End date must be after or equal to start date", 
-                    "Invalid Date Range", 
-                    JOptionPane.ERROR_MESSAGE);
+            if (startDate.after(endDate)) {
+                JOptionPane.showMessageDialog(dateDialog, "Start date must be before end date!", "Invalid Date Range", JOptionPane.ERROR_MESSAGE);
+                return;
             }
+            
+            applyDateFilter(startDate, endDate);
+            dateDialog.dispose();
         });
         
-        buttonPanel.add(cancelButton);
-        buttonPanel.add(applyButton);
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(e -> dateDialog.dispose());
         
-        mainPanel.add(buttonPanel);
+        buttonsPanel.add(applyButton);
+        buttonsPanel.add(cancelButton);
         
-        dateDialog.add(mainPanel, BorderLayout.CENTER);
+        mainPanel.add(titleLabel);
+        mainPanel.add(Box.createVerticalStrut(20));
+        mainPanel.add(startDatePanel);
+        mainPanel.add(Box.createVerticalStrut(10));
+        mainPanel.add(endDatePanel);
+        mainPanel.add(Box.createVerticalStrut(20));
+        mainPanel.add(buttonsPanel);
+        
+        dateDialog.add(mainPanel);
         dateDialog.setVisible(true);
     }
     
@@ -712,73 +753,72 @@ public class SoldCarsUI extends BaseUI {
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
-        // Min price
+        JLabel titleLabel = new JLabel("Select Price Range:");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        // Min price panel
         JPanel minPricePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         minPricePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JLabel minPriceLabel = new JLabel("Minimum Price:");
+        JLabel minPriceLabel = new JLabel("Min Price ($):");
         minPriceLabel.setPreferredSize(new Dimension(100, 25));
         
-        SpinnerNumberModel minModel = new SpinnerNumberModel(0, 0, 500000, 1000);
-        JSpinner minPriceSpinner = new JSpinner(minModel);
-        minPriceSpinner.setPreferredSize(new Dimension(150, 25));
+        SpinnerNumberModel minPriceModel = new SpinnerNumberModel(0, 0, 500000, 1000);
+        JSpinner minPriceSpinner = new JSpinner(minPriceModel);
+        minPriceSpinner.setPreferredSize(new Dimension(120, 25));
         
         minPricePanel.add(minPriceLabel);
         minPricePanel.add(minPriceSpinner);
         
-        // Max price
+        // Max price panel
         JPanel maxPricePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         maxPricePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JLabel maxPriceLabel = new JLabel("Maximum Price:");
+        JLabel maxPriceLabel = new JLabel("Max Price ($):");
         maxPriceLabel.setPreferredSize(new Dimension(100, 25));
         
-        SpinnerNumberModel maxModel = new SpinnerNumberModel(100000, 0, 1000000, 1000);
-        JSpinner maxPriceSpinner = new JSpinner(maxModel);
-        maxPriceSpinner.setPreferredSize(new Dimension(150, 25));
+        SpinnerNumberModel maxPriceModel = new SpinnerNumberModel(100000, 0, 1000000, 1000);
+        JSpinner maxPriceSpinner = new JSpinner(maxPriceModel);
+        maxPriceSpinner.setPreferredSize(new Dimension(120, 25));
         
         maxPricePanel.add(maxPriceLabel);
         maxPricePanel.add(maxPriceSpinner);
         
-        // Add components
-        mainPanel.add(minPricePanel);
-        mainPanel.add(Box.createVerticalStrut(10));
-        mainPanel.add(maxPricePanel);
-        mainPanel.add(Box.createVerticalStrut(20));
-        
         // Buttons panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
-        JButton cancelButton = new JButton("Cancel");
-        cancelButton.addActionListener(e -> priceDialog.dispose());
+        JPanel buttonsPanel = new JPanel(new FlowLayout());
+        buttonsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JButton applyButton = new JButton("Apply Filter");
         applyButton.setBackground(PRIMARY_BLUE);
         applyButton.setForeground(Color.WHITE);
+        applyButton.setFocusPainted(false);
         applyButton.addActionListener(e -> {
-            int minPrice = (int) minPriceSpinner.getValue();
-            int maxPrice = (int) maxPriceSpinner.getValue();
+            int minPrice = (Integer) minPriceSpinner.getValue();
+            int maxPrice = (Integer) maxPriceSpinner.getValue();
             
-            if (maxPrice >= minPrice) {
-                DecimalFormat formatter = new DecimalFormat("$#,###");
-                priceRangeFilterLabel.setText("Filter: " + formatter.format(minPrice) + " - " + formatter.format(maxPrice));
-                activeFilters.put("minPrice", minPrice);
-                activeFilters.put("maxPrice", maxPrice);
-                applyFilters();
-                priceDialog.dispose();
-            } else {
-                JOptionPane.showMessageDialog(priceDialog, 
-                    "Maximum price must be greater than or equal to minimum price", 
-                    "Invalid Price Range", 
-                    JOptionPane.ERROR_MESSAGE);
+            if (minPrice > maxPrice) {
+                JOptionPane.showMessageDialog(priceDialog, "Minimum price must be less than maximum price!", "Invalid Price Range", JOptionPane.ERROR_MESSAGE);
+                return;
             }
+            
+            applyPriceFilter(minPrice, maxPrice);
+            priceDialog.dispose();
         });
         
-        buttonPanel.add(cancelButton);
-        buttonPanel.add(applyButton);
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(e -> priceDialog.dispose());
         
-        mainPanel.add(buttonPanel);
+        buttonsPanel.add(applyButton);
+        buttonsPanel.add(cancelButton);
         
-        priceDialog.add(mainPanel, BorderLayout.CENTER);
+        mainPanel.add(titleLabel);
+        mainPanel.add(Box.createVerticalStrut(20));
+        mainPanel.add(minPricePanel);
+        mainPanel.add(Box.createVerticalStrut(10));
+        mainPanel.add(maxPricePanel);
+        mainPanel.add(Box.createVerticalStrut(20));
+        mainPanel.add(buttonsPanel);
+        
+        priceDialog.add(mainPanel);
         priceDialog.setVisible(true);
     }
     
@@ -787,7 +827,7 @@ public class SoldCarsUI extends BaseUI {
      */
     private void showCarTypeFilterDialog() {
         JDialog typeDialog = new JDialog(this, "Select Car Types", true);
-        typeDialog.setSize(350, 300);
+        typeDialog.setSize(350, 400);
         typeDialog.setLocationRelativeTo(this);
         typeDialog.setLayout(new BorderLayout());
         
@@ -799,94 +839,107 @@ public class SoldCarsUI extends BaseUI {
         titleLabel.setFont(new Font("Arial", Font.BOLD, 14));
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        // Create checkboxes for car types
-        JCheckBox sedanCheckBox = new JCheckBox("Sedan");
-        sedanCheckBox.setFont(new Font("Arial", Font.PLAIN, 14));
-        sedanCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-        sedanCheckBox.setSelected(true);
+        // Get unique car types from sold cars
+        List<String> carTypes = new ArrayList<>();
+        for (SoldCar car : soldCars) {
+            if (!carTypes.contains(car.getType())) {
+                carTypes.add(car.getType());
+            }
+        }
         
-        JCheckBox suvCheckBox = new JCheckBox("SUV");
-        suvCheckBox.setFont(new Font("Arial", Font.PLAIN, 14));
-        suvCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-        suvCheckBox.setSelected(true);
+        // Create checkboxes for each car type
+        JPanel checkboxPanel = new JPanel();
+        checkboxPanel.setLayout(new BoxLayout(checkboxPanel, BoxLayout.Y_AXIS));
+        checkboxPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        JCheckBox truckCheckBox = new JCheckBox("Truck");
-        truckCheckBox.setFont(new Font("Arial", Font.PLAIN, 14));
-        truckCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-        truckCheckBox.setSelected(true);
-        
-        JCheckBox electricCheckBox = new JCheckBox("Electric");
-        electricCheckBox.setFont(new Font("Arial", Font.PLAIN, 14));
-        electricCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-        electricCheckBox.setSelected(true);
-        
-        JCheckBox luxuryCheckBox = new JCheckBox("Luxury");
-        luxuryCheckBox.setFont(new Font("Arial", Font.PLAIN, 14));
-        luxuryCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-        luxuryCheckBox.setSelected(true);
-        
-        // Add components to main panel
-        mainPanel.add(titleLabel);
-        mainPanel.add(Box.createVerticalStrut(15));
-        mainPanel.add(sedanCheckBox);
-        mainPanel.add(Box.createVerticalStrut(10));
-        mainPanel.add(suvCheckBox);
-        mainPanel.add(Box.createVerticalStrut(10));
-        mainPanel.add(truckCheckBox);
-        mainPanel.add(Box.createVerticalStrut(10));
-        mainPanel.add(electricCheckBox);
-        mainPanel.add(Box.createVerticalStrut(10));
-        mainPanel.add(luxuryCheckBox);
-        mainPanel.add(Box.createVerticalStrut(20));
+        Map<String, JCheckBox> checkboxMap = new HashMap<>();
+        for (String type : carTypes) {
+            JCheckBox checkbox = new JCheckBox(type);
+            checkbox.setAlignmentX(Component.LEFT_ALIGNMENT);
+            checkboxMap.put(type, checkbox);
+            checkboxPanel.add(checkbox);
+            checkboxPanel.add(Box.createVerticalStrut(5));
+        }
         
         // Buttons panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
-        JButton cancelButton = new JButton("Cancel");
-        cancelButton.addActionListener(e -> typeDialog.dispose());
+        JPanel buttonsPanel = new JPanel(new FlowLayout());
+        buttonsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JButton applyButton = new JButton("Apply Filter");
         applyButton.setBackground(PRIMARY_BLUE);
         applyButton.setForeground(Color.WHITE);
+        applyButton.setFocusPainted(false);
         applyButton.addActionListener(e -> {
             List<String> selectedTypes = new ArrayList<>();
-            
-            if (sedanCheckBox.isSelected()) selectedTypes.add("Sedan");
-            if (suvCheckBox.isSelected()) selectedTypes.add("SUV");
-            if (truckCheckBox.isSelected()) selectedTypes.add("Truck");
-            if (electricCheckBox.isSelected()) selectedTypes.add("Electric");
-            if (luxuryCheckBox.isSelected()) selectedTypes.add("Luxury");
-            
-            if (selectedTypes.size() == 5 || selectedTypes.isEmpty()) {
-                carTypeFilterLabel.setText("");
-                activeFilters.remove("carTypes");
-            } else {
-                carTypeFilterLabel.setText("Filter: " + String.join(", ", selectedTypes));
-                activeFilters.put("carTypes", selectedTypes);
+            for (Map.Entry<String, JCheckBox> entry : checkboxMap.entrySet()) {
+                if (entry.getValue().isSelected()) {
+                    selectedTypes.add(entry.getKey());
+                }
             }
             
-            applyFilters();
+            if (selectedTypes.isEmpty()) {
+                JOptionPane.showMessageDialog(typeDialog, "Please select at least one car type!", "No Selection", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
+            applyCarTypeFilter(selectedTypes);
             typeDialog.dispose();
         });
         
-        buttonPanel.add(cancelButton);
-        buttonPanel.add(applyButton);
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(e -> typeDialog.dispose());
         
-        mainPanel.add(buttonPanel);
+        buttonsPanel.add(applyButton);
+        buttonsPanel.add(cancelButton);
         
-        typeDialog.add(mainPanel, BorderLayout.CENTER);
+        mainPanel.add(titleLabel);
+        mainPanel.add(Box.createVerticalStrut(20));
+        mainPanel.add(checkboxPanel);
+        mainPanel.add(Box.createVerticalStrut(20));
+        mainPanel.add(buttonsPanel);
+        
+        typeDialog.add(mainPanel);
         typeDialog.setVisible(true);
     }
     
     /**
-     * Apply all active filters to the data
+     * Apply date filter to sold cars
      */
-    private void applyFilters() {
-        JOptionPane.showMessageDialog(this, 
-            "Filters applied. In a real application, this would filter the sold cars data.", 
-            "Filters Applied", 
-            JOptionPane.INFORMATION_MESSAGE);
+    private void applyDateFilter(Date startDate, Date endDate) {
+        SimpleDateFormat formatter = new SimpleDateFormat("MMM dd, yyyy");
+        String filterText = formatter.format(startDate) + " - " + formatter.format(endDate);
+        
+        activeFilters.put("dateRange", new Date[]{startDate, endDate});
+        datePeriodFilterLabel.setText("Active: " + filterText);
+        
+        refreshCarsDisplay();
+    }
+    
+    /**
+     * Apply price filter to sold cars
+     */
+    private void applyPriceFilter(int minPrice, int maxPrice) {
+        String filterText = formatCurrency(minPrice) + " - " + formatCurrency(maxPrice);
+        
+        activeFilters.put("priceRange", new int[]{minPrice, maxPrice});
+        priceRangeFilterLabel.setText("Active: " + filterText);
+        
+        refreshCarsDisplay();
+    }
+    
+    /**
+     * Apply car type filter to sold cars
+     */
+    private void applyCarTypeFilter(List<String> selectedTypes) {
+        String filterText = String.join(", ", selectedTypes);
+        if (filterText.length() > 30) {
+            filterText = filterText.substring(0, 27) + "...";
+        }
+        
+        activeFilters.put("carTypes", selectedTypes);
+        carTypeFilterLabel.setText("Active: " + filterText);
+        
+        refreshCarsDisplay();
     }
     
     /**
@@ -898,74 +951,161 @@ public class SoldCarsUI extends BaseUI {
         priceRangeFilterLabel.setText("");
         carTypeFilterLabel.setText("");
         
-        JOptionPane.showMessageDialog(this, 
-            "All filters cleared. Data would be refreshed in a real application.", 
-            "Filters Cleared", 
-            JOptionPane.INFORMATION_MESSAGE);
+        refreshCarsDisplay();
     }
     
     /**
-     * Export the current data to PDF
+     * Refresh the cars display based on active filters
+     */
+    private void refreshCarsDisplay() {
+        // Filter sold cars based on active filters
+        List<SoldCar> filteredCars = new ArrayList<>();
+        
+        for (SoldCar car : soldCars) {
+            if (matchesFilters(car)) {
+                filteredCars.add(car);
+            }
+        }
+        
+        // Update the display
+        updateCarsGrid(filteredCars);
+    }
+    
+    /**
+     * Check if a car matches all active filters
+     */
+    private boolean matchesFilters(SoldCar car) {
+        // Date range filter
+        if (activeFilters.containsKey("dateRange")) {
+            Date[] dateRange = (Date[]) activeFilters.get("dateRange");
+            try {
+                SimpleDateFormat formatter = new SimpleDateFormat("MMM dd, yyyy");
+                Date carSaleDate = formatter.parse(car.getSaleDate());
+                if (carSaleDate.before(dateRange[0]) || carSaleDate.after(dateRange[1])) {
+                    return false;
+                }
+            } catch (Exception e) {
+                // If date parsing fails, exclude the car
+                return false;
+            }
+        }
+        
+        // Price range filter
+        if (activeFilters.containsKey("priceRange")) {
+            int[] priceRange = (int[]) activeFilters.get("priceRange");
+            try {
+                String priceStr = car.getSalePrice().replaceAll("[^0-9.]", "");
+                double carPrice = Double.parseDouble(priceStr);
+                if (carPrice < priceRange[0] || carPrice > priceRange[1]) {
+                    return false;
+                }
+            } catch (Exception e) {
+                // If price parsing fails, exclude the car
+                return false;
+            }
+        }
+        
+        // Car type filter
+        if (activeFilters.containsKey("carTypes")) {
+            @SuppressWarnings("unchecked")
+            List<String> selectedTypes = (List<String>) activeFilters.get("carTypes");
+            if (!selectedTypes.contains(car.getType())) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Update the cars grid with filtered cars
+     */
+    private void updateCarsGrid(List<SoldCar> filteredCars) {
+        // Remove the current content panel and recreate it
+        SwingUtilities.invokeLater(() -> {
+            // Find the main content panel and update it
+            JPanel contentPanel = (JPanel) ((JPanel) getContentPane().getComponent(0)).getComponent(1);
+            
+            // Remove the cars grid (last component)
+            if (contentPanel.getComponentCount() > 3) {
+                contentPanel.remove(contentPanel.getComponentCount() - 1);
+            }
+            
+            // Create new grid with filtered cars
+            JPanel newCarsGrid = createFilteredCarsGrid(filteredCars);
+            contentPanel.add(newCarsGrid);
+            
+            // Refresh the display
+            revalidate();
+            repaint();
+        });
+    }
+    
+    /**
+     * Create cars grid with filtered cars
+     */
+    private JPanel createFilteredCarsGrid(List<SoldCar> filteredCars) {
+        JPanel gridContainer = new JPanel();
+        gridContainer.setOpaque(false);
+        gridContainer.setLayout(new BoxLayout(gridContainer, BoxLayout.Y_AXIS));
+        gridContainer.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        // Create grid layout (4 cars per row)
+        JPanel gridPanel = new JPanel(new GridLayout(0, 4, 20, 20));
+        gridPanel.setOpaque(false);
+        gridPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        
+        // Add car cards to grid
+        for (SoldCar car : filteredCars) {
+            JPanel carCard = createCarCard(car);
+            gridPanel.add(carCard);
+        }
+        
+        // If no cars match filters, show message
+        if (filteredCars.isEmpty()) {
+            JLabel noDataLabel = new JLabel("No sold cars match the current filters");
+            noDataLabel.setFont(new Font("Arial", Font.ITALIC, 16));
+            noDataLabel.setForeground(new Color(120, 120, 120));
+            noDataLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            gridPanel.add(noDataLabel);
+        }
+        
+        gridContainer.add(gridPanel);
+        return gridContainer;
+    }
+    
+    /**
+     * Export sold cars data to PDF
      */
     private void exportToPdf() {
-        JOptionPane.showMessageDialog(this, 
-            "Exporting sales data to PDF...\nIn a real application, this would create a PDF file.", 
-            "Export to PDF", 
+        JOptionPane.showMessageDialog(this,
+            "PDF Export functionality will be implemented here.\n\n" +
+            "This would generate a comprehensive report including:\n" +
+            "- Sales statistics\n" +
+            "- Individual car sale details\n" +
+            "- Charts and graphs\n" +
+            "- Filtered results if any filters are active",
+            "Export to PDF",
             JOptionPane.INFORMATION_MESSAGE);
     }
     
     /**
-     * Calculate sales statistics
-     */
-    private void calculateSalesStatistics() {
-        if (soldCars == null || soldCars.isEmpty()) {
-            totalSoldCount = 0;
-            totalSalesValue = 0;
-            averagePrice = 0;
-            monthlySalesCount = 0;
-            return;
-        }
-        
-        totalSoldCount = soldCars.size();
-        totalSalesValue = 0;
-        
-        for (SoldCar car : soldCars) {
-            String priceStr = car.getSalePrice().replace("$", "").replace(",", "");
-            try {
-                double price = Double.parseDouble(priceStr);
-                totalSalesValue += price;
-            } catch (NumberFormatException e) {
-                // Skip invalid prices
-            }
-        }
-        
-        if (totalSoldCount > 0) {
-            averagePrice = totalSalesValue / totalSoldCount;
-        } else {
-            averagePrice = 0;
-        }
-        
-        // Count sales in current month (May)
-        monthlySalesCount = 0;
-        for (SoldCar car : soldCars) {
-            if (car.getSaleDate().contains("May")) {
-                monthlySalesCount++;
-            }
-        }
-    }
-    
-    /**
-     * Format a number as currency
-     * @param amount The amount to format
-     * @return Formatted currency string
+     * Format currency value
      */
     private String formatCurrency(double amount) {
-        DecimalFormat formatter = new DecimalFormat("$#,###,###");
+        DecimalFormat formatter = new DecimalFormat("$#,##0.00");
         return formatter.format(amount);
     }
     
     /**
-     * Inner class to represent a Sold Car
+     * Format currency value from integer
+     */
+    private String formatCurrency(int amount) {
+        return formatCurrency((double) amount);
+    }
+    
+    /**
+     * Inner class to represent a sold car
      */
     public static class SoldCar {
         private int id;
@@ -980,9 +1120,9 @@ public class SoldCarsUI extends BaseUI {
         private String paymentMethod;
         private String imagePath;
         
-        public SoldCar(int id, String model, String year, String type, String color, 
-                       String salePrice, String saleDate, String buyerName, String buyerContact, 
-                       String paymentMethod, String imagePath) {
+        public SoldCar(int id, String model, String year, String type, String color,
+                       String salePrice, String saleDate, String buyerName,
+                       String buyerContact, String paymentMethod, String imagePath) {
             this.id = id;
             this.model = model;
             this.year = year;
@@ -1021,20 +1161,5 @@ public class SoldCarsUI extends BaseUI {
         public void setBuyerContact(String buyerContact) { this.buyerContact = buyerContact; }
         public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
         public void setImagePath(String imagePath) { this.imagePath = imagePath; }
-    }
-    
-    /**
-     * Main method to test the Sold Cars UI
-     */
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                // Set look and feel to system look and feel
-                javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            new SoldCarsUI().setVisible(true);
-        });
     }
 }

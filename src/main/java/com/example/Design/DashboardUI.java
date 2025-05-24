@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FlowLayout;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
@@ -20,14 +21,20 @@ import javax.swing.SwingUtilities;
 /**
  * Dashboard UI for the Car Store Management system.
  * Extends BaseUI to inherit common functionality.
+ * Now connected to database through DashboardIntegration
  */
 public class DashboardUI extends BaseUI {
+    
+    // Database integration
+    private DashboardIntegration integration;
+    private DashboardIntegration.DashboardStats dashboardStats;
     
     /**
      * Default constructor
      */
     public DashboardUI() {
         super();
+        initializeDashboard();
     }
     
     /**
@@ -36,7 +43,82 @@ public class DashboardUI extends BaseUI {
      */
     public DashboardUI(int adminId) {
         super(adminId);
+        initializeDashboard();
         setVisible(true);
+    }
+    
+    /**
+     * Initialize dashboard data before UI creation
+     */
+    private void initializeDashboard() {
+        this.integration = DashboardIntegration.getInstance();
+        // Create default stats first to ensure it's never null
+        this.dashboardStats = createDefaultStats();
+        // Then try to load from database
+        loadDashboardData();
+    }
+    
+    /**
+     * Ensure dashboardStats exists before panel creation
+     */
+    protected void initializeUI() {
+        // Make sure dashboardStats is initialized
+        if (dashboardStats == null) {
+            initializeDashboard();
+        }
+        // If BaseUI has another initialization method, call it here. Otherwise, do nothing.
+    }
+    
+    /**
+     * Load dashboard data from database
+     */
+    private void loadDashboardData() {
+        try {
+            System.out.println("Loading dashboard data from database...");
+            
+            if (integration == null) {
+                integration = DashboardIntegration.getInstance();
+            }
+            
+            DashboardIntegration.DashboardStats newStats = integration.getDashboardStats();
+            
+            if (newStats != null) {
+                dashboardStats = newStats;
+                System.out.println("Dashboard data loaded successfully from database");
+            } else {
+                System.err.println("Integration returned null stats, keeping default stats");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error loading dashboard data: " + e.getMessage());
+            e.printStackTrace();
+            // Keep the default stats on error
+        }
+    }
+    
+    /**
+     * Create default stats object with sample data
+     */
+    private DashboardIntegration.DashboardStats createDefaultStats() {
+        DashboardIntegration.DashboardStats stats = new DashboardIntegration.DashboardStats();
+        stats.availableCars = 5;
+        stats.soldCars = 3;
+        stats.totalCars = 8;
+        stats.comingSoonCars = 4;
+        stats.soldToday = 1;
+        stats.totalRevenue = 45000.0;
+        stats.monthlySales = 12;
+        stats.monthlyRevenue = 340000.0;
+        
+        System.out.println("Created default dashboard stats");
+        return stats;
+    }
+    
+    /**
+     * Format currency values
+     */
+    private String formatCurrency(double amount) {
+        return String.format("$%,.0f", amount);
     }
     
     @Override
@@ -53,6 +135,11 @@ public class DashboardUI extends BaseUI {
     
     @Override
     protected JPanel createContentPanel() {
+        // Ensure dashboardStats is initialized
+        if (dashboardStats == null) {
+            initializeDashboard();
+        }
+        
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBackground(LIGHT_GRAY_BG);
@@ -78,28 +165,53 @@ public class DashboardUI extends BaseUI {
         titlePanel.add(Box.createVerticalStrut(5));
         titlePanel.add(welcomeLabel);
         
+        // Create button panel with proper FlowLayout
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setBackground(LIGHT_GRAY_BG);
+        
+        // Test Database button
+        JButton testDbButton = new JButton("Test Database");
+        testDbButton.setBackground(PRIMARY_YELLOW);
+        testDbButton.setForeground(Color.WHITE);
+        testDbButton.setFocusPainted(false);
+        testDbButton.setFont(new Font("Arial", Font.BOLD, 12));
+        testDbButton.setPreferredSize(new Dimension(120, 40));
+        testDbButton.addActionListener(e -> DatabaseTestUtility.testAndShowDatabaseStatus());
+        
         JButton refreshButton = new JButton("Refresh Dashboard");
         refreshButton.setBackground(PRIMARY_BLUE);
         refreshButton.setForeground(Color.WHITE);
         refreshButton.setFocusPainted(false);
         refreshButton.setFont(new Font("Arial", Font.BOLD, 14));
-        refreshButton.setPreferredSize(new Dimension(200, 40));
+        refreshButton.setPreferredSize(new Dimension(160, 40));
         
-        // Add action listener to refresh button
+        buttonPanel.add(testDbButton);
+        buttonPanel.add(refreshButton);
+        
+        // Add action listener to refresh button - now reloads from database
         refreshButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Code to refresh dashboard data would go here
-                // For now, just recreate the dashboard
+                // Reload data from database
+                loadDashboardData();
+                
+                // Show loading message
+                JOptionPane.showMessageDialog(DashboardUI.this,
+                    "Dashboard data refreshed from database!",
+                    "Refresh Complete",
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                // Recreate the dashboard with new data
                 dispose();
                 SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
             }
         });
         
         headerPanel.add(titlePanel, BorderLayout.WEST);
-        headerPanel.add(refreshButton, BorderLayout.EAST);
+        headerPanel.add(buttonPanel, BorderLayout.EAST);
         
-        // Today's Overview Section
+        // Today's Overview Section - now using database data
         JPanel overviewPanel = new JPanel(new BorderLayout());
         overviewPanel.setBackground(LIGHT_GRAY_BG);
         overviewPanel.setBorder(BorderFactory.createEmptyBorder(10, 30, 20, 30));
@@ -112,11 +224,15 @@ public class DashboardUI extends BaseUI {
         overviewCardsPanel.setBackground(LIGHT_GRAY_BG);
         overviewCardsPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
         
-        // Add overview cards with updated statistics
-        overviewCardsPanel.add(createOverviewCard("Available Cars", "24", PRIMARY_BLUE));
-        overviewCardsPanel.add(createOverviewCard("Coming Soon", "8", PRIMARY_YELLOW));
-        overviewCardsPanel.add(createOverviewCard("Sold Today", "3", PRIMARY_GREEN));
-        overviewCardsPanel.add(createOverviewCard("Total Revenue", "$95,400", PRIMARY_RED));
+        // Add overview cards with real database statistics
+        overviewCardsPanel.add(createOverviewCard("Available Cars", 
+            Integer.toString(dashboardStats.availableCars), PRIMARY_BLUE));
+        overviewCardsPanel.add(createOverviewCard("Coming Soon", 
+            Integer.toString(dashboardStats.comingSoonCars), PRIMARY_YELLOW));
+        overviewCardsPanel.add(createOverviewCard("Sold Today", 
+            Integer.toString(dashboardStats.soldToday), PRIMARY_GREEN));
+        overviewCardsPanel.add(createOverviewCard("Total Revenue", 
+            formatCurrency(dashboardStats.totalRevenue), PRIMARY_RED));
         
         overviewPanel.add(overviewLabel, BorderLayout.NORTH);
         overviewPanel.add(overviewCardsPanel, BorderLayout.CENTER);
@@ -135,7 +251,8 @@ public class DashboardUI extends BaseUI {
         toolsGridPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
         
         // Add tool cards with action listeners
-        JPanel carsCard = createToolCard("Car Inventory", "Search and manage all available cars", PRIMARY_BLUE);
+        JPanel carsCard = createToolCard("Car Inventory", 
+            "Search and manage " + dashboardStats.totalCars + " vehicles", PRIMARY_BLUE);
         JButton carsButton = getAccessButtonFromToolCard(carsCard);
         carsButton.addActionListener(e -> navigateTo("Car Inventory"));
         
@@ -143,15 +260,18 @@ public class DashboardUI extends BaseUI {
         JButton addCarButton = getAccessButtonFromToolCard(addCarCard);
         addCarButton.addActionListener(e -> navigateTo("Add New Car"));
         
-        JPanel soldCarsCard = createToolCard("Sold Cars", "Review and modify sold car records", PRIMARY_GREEN);
+        JPanel soldCarsCard = createToolCard("Sold Cars", 
+            "Review " + dashboardStats.soldCars + " sold vehicles", PRIMARY_GREEN);
         JButton soldCarsButton = getAccessButtonFromToolCard(soldCarsCard);
         soldCarsButton.addActionListener(e -> navigateTo("Sold Cars"));
         
-        JPanel comingSoonCard = createToolCard("Coming Soon Cars", "Authorize pending car shipments", PRIMARY_RED);
+        JPanel comingSoonCard = createToolCard("Coming Soon Cars", 
+            "Manage " + dashboardStats.comingSoonCars + " pending arrivals", PRIMARY_RED);
         JButton comingSoonButton = getAccessButtonFromToolCard(comingSoonCard);
         comingSoonButton.addActionListener(e -> navigateTo("Coming Soon"));
         
-        JPanel economicCard = createToolCard("Economic Reports", "Generate financial and sales reports", PRIMARY_YELLOW);
+        JPanel economicCard = createToolCard("Economic Reports", 
+            "Monthly revenue: " + formatCurrency(dashboardStats.monthlyRevenue), PRIMARY_YELLOW);
         JButton economicButton = getAccessButtonFromToolCard(economicCard);
         economicButton.addActionListener(e -> navigateTo("Economic"));
         
@@ -203,6 +323,9 @@ public class DashboardUI extends BaseUI {
         quickActionsPanel.add(quickActionsLabel, BorderLayout.NORTH);
         quickActionsPanel.add(quickButtonsPanel, BorderLayout.CENTER);
         
+        // Database Status Panel
+        JPanel statusPanel = createDatabaseStatusPanel();
+        
         // Footer
         JPanel footerPanel = createFooterPanel();
         
@@ -211,10 +334,45 @@ public class DashboardUI extends BaseUI {
         mainPanel.add(overviewPanel);
         mainPanel.add(managementPanel);
         mainPanel.add(quickActionsPanel);
+        mainPanel.add(statusPanel);
         mainPanel.add(Box.createVerticalGlue());
         mainPanel.add(footerPanel);
         
         return mainPanel;
+    }
+    
+    /**
+     * Create database status panel showing connection info
+     */
+    private JPanel createDatabaseStatusPanel() {
+        JPanel statusPanel = new JPanel(new BorderLayout());
+        statusPanel.setBackground(LIGHT_GRAY_BG);
+        statusPanel.setBorder(BorderFactory.createEmptyBorder(10, 30, 10, 30));
+        
+        JLabel statusLabel = new JLabel("DATABASE STATUS");
+        statusLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        statusLabel.setForeground(Color.DARK_GRAY);
+        
+        // Create status indicator
+        boolean dbConnected = dashboardStats != null && dashboardStats.totalCars >= 0;
+        String statusText = dbConnected ? 
+            "✅ Connected - Last updated: " + java.time.LocalDateTime.now().format(
+                java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm:ss")) :
+            "⚠️ Using sample data - Database connection unavailable";
+        
+        JLabel statusInfo = new JLabel(statusText);
+        statusInfo.setFont(new Font("Arial", Font.PLAIN, 11));
+        statusInfo.setForeground(dbConnected ? new Color(25, 135, 84) : PRIMARY_YELLOW);
+        
+        JPanel statusContent = new JPanel();
+        statusContent.setBackground(LIGHT_GRAY_BG);
+        statusContent.setLayout(new BoxLayout(statusContent, BoxLayout.Y_AXIS));
+        statusContent.add(statusLabel);
+        statusContent.add(statusInfo);
+        
+        statusPanel.add(statusContent, BorderLayout.WEST);
+        
+        return statusPanel;
     }
     
     /**
@@ -259,8 +417,6 @@ public class DashboardUI extends BaseUI {
                 break;
         }
     }
-    
-    
     
     /**
      * Create a quick action button

@@ -1,5 +1,6 @@
 package com.example.Design;
-
+import com.example.OOP.backend.CarDAO;
+import com.example.OOP.backend.Car;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -957,5 +958,45 @@ public class AddCarUI extends BaseUI {
             }
             new AddCarUI().setVisible(true);
         });
+    }
+
+    private void handleAddCar() {
+        // Gather car info from UI fields
+        String make = manufacturerField.getText();
+        String model = modelField.getText();
+        int year = Integer.parseInt(yearSpinner.getValue().toString());
+        double price = Double.parseDouble(priceSpinner.getValue().toString());
+        double cost = Double.parseDouble(costSpinner.getValue().toString());
+        int mileage = Integer.parseInt(mileageSpinner.getValue().toString());
+        String color = colorField.getText();
+        String category = categoryComboBox.getSelectedItem().toString();
+        String status = statusComboBox.getSelectedItem().toString();
+        String engineType = engineTypeField.getText();
+        String transmission = transmissionComboBox.getSelectedItem().toString();
+        String fuelType = fuelTypeComboBox.getSelectedItem().toString();
+        int horsepower = Integer.parseInt(horsepowerSpinner.getValue().toString());
+        int seats = Integer.parseInt(seatsSpinner.getValue().toString());
+        double fuelEconomy = Double.parseDouble(fuelEconomyField.getText());
+        String features = featuresArea.getText();
+        String notes = notesArea.getText();
+        
+        // Adjust the constructor parameters to match the Car class definition.
+        // Example below assumes a typical constructor; update as needed to match your Car.java:
+                // Car newCar = new Car(make, model, year, color, category, price, cost, mileage, status, engineType, transmission, fuelType, horsepower, seats, fuelEconomy, features, notes, selectedImagePath);
+
+        // try {
+        //     CarDAO carDAO = new CarDAO();
+        //     carDAO.addCar(newCar); // Insert into DB
+
+        //     JOptionPane.showMessageDialog(this, "Car added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+
+        //     // Optionally, clear fields or close window
+        //     dispose();
+
+        //     // Open/refresh CarManagement UI
+        //     SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
+        // } catch (Exception ex) {
+        //     JOptionPane.showMessageDialog(this, "Error adding car: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        // }
     }
 }
