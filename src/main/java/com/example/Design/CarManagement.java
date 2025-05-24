@@ -317,11 +317,72 @@ public class CarManagement extends BaseUI {
     /**
      * Initialize sample data for cars
      */
-    private void initializeSampleData() {
-        // Get cars from the shared CarStatusManager
-        CarStatusManager carManager = CarStatusManager.getInstance();
-        cars = carManager.getAvailableCars(); // Only get available and reserved cars
+   private void initializeSampleData() {
+    try {
+        // === LOAD FROM DATABASE ===
+        CarManagementIntegration integration = CarManagementIntegration.getInstance();
+        integration.setCurrentStaffId(adminId);
+        
+        // Get all available and reserved cars from database
+        List<CarManagement.Car> availableCars = integration.getAvailableCars();
+        List<CarManagement.Car> reservedCars = integration.getCarsByStatus("reserved");
+        
+        // Combine available and reserved cars for inventory display
+        cars = new ArrayList<>();
+        cars.addAll(availableCars);
+        cars.addAll(reservedCars);
+        
+        System.out.println("✅ Loaded " + cars.size() + " cars from database");
+        
+        // If database is empty, you can optionally add some sample data
+        if (cars.isEmpty()) {
+            System.out.println("⚠️ Database is empty. Consider adding sample data or adding cars through the UI.");
+        }
+        
+    } catch (Exception e) {
+        System.err.println("❌ Error loading cars from database: " + e.getMessage());
+        e.printStackTrace();
+        
+        // Fallback to empty list
+        cars = new ArrayList<>();
+        
+        // Show error to user
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(this,
+                "Error loading cars from database:\n" + e.getMessage() + 
+                "\n\nPlease check your database connection.",
+                "Database Connection Error",
+                JOptionPane.WARNING_MESSAGE);
+        });
     }
+}
+
+
+
+public void refreshCarInventory() {
+    initializeSampleData();
+    calculateCarStatistics();
+    
+    // Recreate the cars grid with updated data
+    JPanel contentPanel = (JPanel) ((BorderLayout) getContentPane().getLayout())
+        .getLayoutComponent(BorderLayout.CENTER);
+    
+    // Find and update the cars grid
+    Component[] components = contentPanel.getComponents();
+    for (int i = 0; i < components.length; i++) {
+        if (components[i] instanceof JPanel) {
+            // This is a simplified approach - you might need to adjust based on your layout
+            JPanel carsGridPanel = createCarsGrid();
+            // Replace the old grid with new one
+            // Implementation depends on your exact layout structure
+        }
+    }
+    
+    revalidate();
+    repaint();
+    
+    System.out.println("🔄 Car inventory refreshed from database");
+}
     
     /**
      * Create cars grid panel with car cards
