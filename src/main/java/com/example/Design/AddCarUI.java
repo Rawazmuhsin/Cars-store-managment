@@ -835,34 +835,48 @@ public class AddCarUI extends BaseUI {
         return true;
     }
     
-    private void saveNewCar() {
-        if (!validateForm()) {
-            return;
-        }
+   private void saveNewCar() {
+    if (!validateForm()) {
+        return;
+    }
+    
+    try {
+        // Get all form data
+        String vin = vinField.getText().trim();
+        String manufacturer = manufacturerField.getText().trim();
+        String model = modelField.getText().trim();
+        Integer year = (Integer) yearSpinner.getValue();
+        String category = (String) categoryComboBox.getSelectedItem();
+        String color = colorField.getText().trim();
+        Double salePrice = (Double) priceSpinner.getValue();
+        Double costPrice = (Double) costSpinner.getValue();
+        Integer mileage = (Integer) mileageSpinner.getValue();
+        String location = locationField.getText().trim();
+        String status = (String) statusComboBox.getSelectedItem();
         
-        try {
-            String vin = vinField.getText().trim();
-            String manufacturer = manufacturerField.getText().trim();
-            String model = modelField.getText().trim();
-            Integer year = (Integer) yearSpinner.getValue();
-            String category = (String) categoryComboBox.getSelectedItem();
-            String color = colorField.getText().trim();
-            Double salePrice = (Double) priceSpinner.getValue();
-            Double costPrice = (Double) costSpinner.getValue();
-            Integer mileage = (Integer) mileageSpinner.getValue();
-            String location = locationField.getText().trim();
-            String status = (String) statusComboBox.getSelectedItem();
-            
-            String engineType = engineTypeField.getText().trim();
-            String transmission = (String) transmissionComboBox.getSelectedItem();
-            String fuelType = (String) fuelTypeComboBox.getSelectedItem();
-            Integer horsepower = (Integer) horsepowerSpinner.getValue();
-            Integer seats = (Integer) seatsSpinner.getValue();
-            String fuelEconomy = fuelEconomyField.getText().trim();
-            String features = featuresArea.getText().trim();
-            String notes = notesArea.getText().trim();
-            
-            String successMessage = "Vehicle Added Successfully!\n\n" +
+        String engineType = engineTypeField.getText().trim();
+        String transmission = (String) transmissionComboBox.getSelectedItem();
+        String fuelType = (String) fuelTypeComboBox.getSelectedItem();
+        Integer horsepower = (Integer) horsepowerSpinner.getValue();
+        Integer seats = (Integer) seatsSpinner.getValue();
+        String fuelEconomy = fuelEconomyField.getText().trim();
+        String features = featuresArea.getText().trim();
+        String notes = notesArea.getText().trim();
+        
+        // === SAVE TO DATABASE ===
+        CarManagementIntegration integration = CarManagementIntegration.getInstance();
+        integration.setCurrentStaffId(adminId); // Set current user
+        
+        boolean success = integration.saveCarFromAddCarUI(
+            vin, manufacturer, model, year, category, color,
+            salePrice, costPrice, mileage, location, engineType,
+            transmission, fuelType, horsepower, seats,
+            fuelEconomy, features, notes, selectedImagePath
+        );
+        
+        if (success) {
+            // === SUCCESS - SAVED TO DATABASE ===
+            String successMessage = "Vehicle Added Successfully to Database!\n\n" +
                     "VIN: " + vin + "\n" +
                     "Vehicle: " + manufacturer + " " + model + " " + year + "\n" +
                     "Color: " + color + "\n" +
@@ -871,32 +885,45 @@ public class AddCarUI extends BaseUI {
                     "Cost Price: $" + String.format("%.2f", costPrice) + "\n" +
                     "Status: " + status + "\n" +
                     "Date Added: " + currentDate + "\n" +
-                    (selectedImagePath.isEmpty() ? "" : "Image: " + new File(selectedImagePath).getName());
+                    (selectedImagePath.isEmpty() ? "" : "Image: " + new File(selectedImagePath).getName()) +
+                    "\n\n✅ Car has been saved to database and will appear in inventory.";
             
             JOptionPane.showMessageDialog(this, 
                 successMessage, 
-                "Success", 
+                "Success - Database Updated", 
                 JOptionPane.INFORMATION_MESSAGE);
             
             int addAnother = JOptionPane.showConfirmDialog(this, 
-                "Vehicle added successfully! Would you like to add another vehicle?", 
+                "Vehicle added successfully to database! Would you like to add another vehicle?", 
                 "Add Another Vehicle", 
                 JOptionPane.YES_NO_OPTION);
             
             if (addAnother == JOptionPane.YES_OPTION) {
                 clearForm();
             } else {
-                goBackToInventory();
+                goBackToInventory(); // Will now show the new car from database
             }
-            
-        } catch (Exception e) {
+        } else {
+            // === FAILURE - NOT SAVED ===
             JOptionPane.showMessageDialog(this, 
-                "Error saving vehicle: " + e.getMessage(), 
-                "Save Error", 
+                "❌ Failed to save vehicle to database.\n" +
+                "Please check your database connection and try again.", 
+                "Database Save Error", 
                 JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
         }
+        
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, 
+            "Error saving vehicle to database: " + e.getMessage() + 
+            "\n\nPlease check:\n" +
+            "- Database connection\n" +
+            "- VIN format (17 characters)\n" +
+            "- All required fields", 
+            "Save Error", 
+            JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
     }
+}
     
     private void goBackToInventory() {
         if (hasUnsavedChanges()) {
