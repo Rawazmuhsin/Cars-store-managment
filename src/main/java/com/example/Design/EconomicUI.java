@@ -15,9 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -223,8 +221,8 @@ public class EconomicUI extends BaseUI {
     exportButton.setFont(new Font("Arial", Font.BOLD, 14));
     exportButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
     exportButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-    exportButton.setOpaque(true);  // Add this
-    exportButton.setBorderPainted(false);  // Add this
+    exportButton.setOpaque(true);  
+    exportButton.setBorderPainted(false);  
     
     // For Mac compatibility
     exportButton.putClientProperty("JButton.buttonType", "segmented");
