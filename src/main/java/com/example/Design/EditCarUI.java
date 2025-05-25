@@ -636,81 +636,75 @@ public class EditCarUI extends BaseUI {
     }
     
     /**
-     * Save changes to the car
-     */
-    private void saveChanges() {
-        // Validate required fields
-        if (modelField.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter the car model.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-            modelField.requestFocus();
-            return;
+ * Save changes to the car
+ * This method should be in your EditCarUI class
+ */
+private void saveChanges() {
+    // Validate required fields
+    if (modelField.getText().trim().isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Please enter the car model.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+        modelField.requestFocus();
+        return;
+    }
+    
+    if (colorField.getText().trim().isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Please enter the color.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+        colorField.requestFocus();
+        return;
+    }
+    
+    if (priceField.getText().trim().isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Please enter the price.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+        priceField.requestFocus();
+        return;
+    }
+    
+    // Validate price format
+    try {
+        double price = Double.parseDouble(priceField.getText().replace(",", ""));
+        if (price <= 0) {
+            throw new NumberFormatException("Price must be positive");
         }
-        
-        if (colorField.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter the color.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-            colorField.requestFocus();
-            return;
-        }
-        
-        if (priceField.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter the price.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-            priceField.requestFocus();
-            return;
-        }
-        
-        // Validate price format
-        try {
-            double price = Double.parseDouble(priceField.getText().replace(",", ""));
-            if (price <= 0) {
-                throw new NumberFormatException("Price must be positive");
-            }
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Please enter a valid price.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-            priceField.requestFocus();
-            return;
-        }
-        
-        // Update car object with new values
-        car.setModel(modelField.getText().trim());
-        car.setYear(yearSpinner.getValue().toString());
-        car.setType((String) typeComboBox.getSelectedItem());
-        car.setColor(colorField.getText().trim());
-        
-        // Format price
-        try {
-            double priceValue = Double.parseDouble(priceField.getText().replace(",", ""));
-            car.setPrice(String.format("$%,.0f", priceValue));
-        } catch (NumberFormatException e) {
-            car.setPrice("$" + priceField.getText().trim());
-        }
-        
-        car.setStatus((String) statusComboBox.getSelectedItem());
-        
-        // Format date
-        Date selectedDate = (Date) dateAddedSpinner.getValue();
-        java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("MMM dd, yyyy");
-        car.setDateAdded(formatter.format(selectedDate));
-        
-        // Update image path
-        car.setImagePath(selectedImagePath);
-        
-        // In a real application, this would save to the database
-        String successMessage = "Vehicle Information Updated Successfully!\n\n" +
-                "Model: " + car.getModel() + "\n" +
-                "Year: " + car.getYear() + "\n" +
-                "Type: " + car.getType() + "\n" +
-                "Color: " + car.getColor() + "\n" +
-                "Price: " + car.getPrice() + "\n" +
-                "Status: " + car.getStatus();
-        
-        JOptionPane.showMessageDialog(this, 
-            successMessage, 
-            "Success", 
-            JOptionPane.INFORMATION_MESSAGE);
-        
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(this, "Please enter a valid price.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+        priceField.requestFocus();
+        return;
+    }
+    
+    // Update car object with new values
+    car.setModel(modelField.getText().trim());
+    car.setYear(yearSpinner.getValue().toString());
+    car.setType((String) typeComboBox.getSelectedItem());
+    car.setColor(colorField.getText().trim());
+    
+    // Format price
+    try {
+        double priceValue = Double.parseDouble(priceField.getText().replace(",", ""));
+        car.setPrice(String.format("$%,.0f", priceValue));
+    } catch (NumberFormatException e) {
+        car.setPrice("$" + priceField.getText().trim());
+    }
+    
+    car.setStatus((String) statusComboBox.getSelectedItem());
+    
+    // Format date
+    Date selectedDate = (Date) dateAddedSpinner.getValue();
+    java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("MMM dd, yyyy");
+    car.setDateAdded(formatter.format(selectedDate));
+    
+    // Update image path
+    car.setImagePath(selectedImagePath);
+    
+    // Use CarManagementIntegration to update the car in the database
+    CarManagementIntegration integration = CarManagementIntegration.getInstance();
+    boolean success = integration.updateCar(car);
+    
+    if (success) {
         // Go back to details page
         goBackToDetails();
     }
+    // Error messages are handled by the integration class
+}
     
     /**
      * Delete the vehicle

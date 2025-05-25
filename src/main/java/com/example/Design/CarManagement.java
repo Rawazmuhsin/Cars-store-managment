@@ -1,8 +1,8 @@
 package com.example.Design;
 
-import java.awt.BorderLayout;
-// Add this import if CarDAO is in another package, adjust the package as needed
 import com.example.OOP.backend.CarDAO;
+import com.example.OOP.backend.Car;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
@@ -38,6 +38,7 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  * Car Management UI class that extends BaseUI to inherit common UI elements
@@ -317,74 +318,102 @@ public class CarManagement extends BaseUI {
     }
     
     /**
-     * Initialize sample data for cars
+     * Initialize car data from database
      */
-   private void initializeSampleData() {
-    try {
-        // === LOAD FROM DATABASE ===
-        CarManagementIntegration integration = CarManagementIntegration.getInstance();
-        integration.setCurrentStaffId(adminId);
-        
-        // Get all available and reserved cars from database
-        List<CarManagement.Car> availableCars = integration.getAvailableCars();
-        List<CarManagement.Car> reservedCars = integration.getCarsByStatus("reserved");
-        
-        // Combine available and reserved cars for inventory display
-        cars = new ArrayList<>();
-        cars.addAll(availableCars);
-        cars.addAll(reservedCars);
-        
-        System.out.println("✅ Loaded " + cars.size() + " cars from database");
-        
-        // If database is empty, you can optionally add some sample data
-        if (cars.isEmpty()) {
-            System.out.println("⚠️ Database is empty. Consider adding sample data or adding cars through the UI.");
-        }
-        
-    } catch (Exception e) {
-        System.err.println("❌ Error loading cars from database: " + e.getMessage());
-        e.printStackTrace();
-        
-        // Fallback to empty list
-        cars = new ArrayList<>();
-        
-        // Show error to user
-        SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(this,
-                "Error loading cars from database:\n" + e.getMessage() + 
-                "\n\nPlease check your database connection.",
-                "Database Connection Error",
-                JOptionPane.WARNING_MESSAGE);
-        });
-    }
-}
-
-
-
-public void refreshCarInventory() {
-    initializeSampleData();
-    calculateCarStatistics();
-    
-    // Recreate the cars grid with updated data
-    JPanel contentPanel = (JPanel) ((BorderLayout) getContentPane().getLayout())
-        .getLayoutComponent(BorderLayout.CENTER);
-    
-    // Find and update the cars grid
-    Component[] components = contentPanel.getComponents();
-    for (int i = 0; i < components.length; i++) {
-        if (components[i] instanceof JPanel) {
-            // This is a simplified approach - you might need to adjust based on your layout
-            JPanel carsGridPanel = createCarsGrid();
-            // Replace the old grid with new one
-            // Implementation depends on your exact layout structure
+    private void initializeSampleData() {
+        try {
+            // === LOAD FROM DATABASE ===
+            CarManagementIntegration integration = CarManagementIntegration.getInstance();
+            integration.setCurrentStaffId(adminId);
+            
+            // Get all available and reserved cars from database
+            List<CarManagement.Car> availableCars = integration.getCarsByStatus("available");
+            List<CarManagement.Car> reservedCars = integration.getCarsByStatus("reserved");
+            
+            // Combine available and reserved cars for inventory display
+            cars = new ArrayList<>();
+            cars.addAll(availableCars);
+            cars.addAll(reservedCars);
+            
+            System.out.println("✅ Loaded " + cars.size() + " cars from database");
+            
+            // If database is empty, you can optionally add some sample data
+            if (cars.isEmpty()) {
+                System.out.println("⚠️ Database is empty. Consider adding sample data or adding cars through the UI.");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error loading cars from database: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Fallback to empty list
+            cars = new ArrayList<>();
+            
+            // Show error to user
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(this,
+                    "Error loading cars from database:\n" + e.getMessage() + 
+                    "\n\nPlease check your database connection.",
+                    "Database Connection Error",
+                    JOptionPane.WARNING_MESSAGE);
+            });
         }
     }
     
-    revalidate();
-    repaint();
-    
-    System.out.println("🔄 Car inventory refreshed from database");
-}
+    /**
+     * Refresh car inventory from database
+     */
+    public void refreshCarInventory() {
+        // Clear existing cars
+        cars.clear();
+        
+        // Reload from database
+        initializeSampleData();
+        calculateCarStatistics();
+        
+        // Get the content panel
+        JPanel contentPanel = (JPanel) ((BorderLayout) getContentPane().getLayout())
+            .getLayoutComponent(BorderLayout.CENTER);
+        
+        // Remove the old car grid panel and add a new one
+        // First, find the car grid panel
+        Component[] components = contentPanel.getComponents();
+        for (int i = 0; i < components.length; i++) {
+            if (components[i] instanceof JPanel && i == 4) { // This should be the cars grid panel based on your layout
+                // Remove the old panel
+                contentPanel.remove(components[i]);
+                
+                // Create a new one
+                JPanel carsGridPanel = createCarsGrid();
+                contentPanel.add(carsGridPanel);
+                break;
+            }
+        }
+        
+        // Update the stats panel with new counts
+        Component statsPanel = contentPanel.getComponent(0);
+        if (statsPanel instanceof JPanel) {
+            JPanel panel = (JPanel) statsPanel;
+            panel.removeAll();
+            
+            // Create new overview cards
+            JPanel totalCarsCard = createOverviewCard("Total Cars", Integer.toString(totalCarsCount), PRIMARY_BLUE);
+            JPanel availableCard = createOverviewCard("Available", Integer.toString(availableCarsCount), PRIMARY_GREEN);
+            JPanel soldCard = createOverviewCard("Sold", Integer.toString(soldCarsCount), PRIMARY_RED);
+            JPanel reservedCard = createOverviewCard("Reserved", Integer.toString(reservedCarsCount), PRIMARY_YELLOW);
+            
+            panel.add(totalCarsCard);
+            panel.add(availableCard);
+            panel.add(soldCard);
+            panel.add(reservedCard);
+        }
+        
+        // Refresh the UI
+        contentPanel.revalidate();
+        contentPanel.repaint();
+        
+        System.out.println("🔄 Car inventory refreshed from database");
+    }
     
     /**
      * Create cars grid panel with car cards
@@ -489,16 +518,16 @@ public void refreshCarInventory() {
         statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         // Set status color
-        switch (car.getStatus()) {
-            case "Available":
+        switch (car.getStatus().toLowerCase()) {
+            case "available":
                 statusLabel.setBackground(new Color(232, 255, 232));
                 statusLabel.setForeground(new Color(25, 135, 84));
                 break;
-            case "Sold":
+            case "sold":
                 statusLabel.setBackground(new Color(255, 236, 236));
                 statusLabel.setForeground(new Color(220, 53, 69));
                 break;
-            case "Reserved":
+            case "reserved":
                 statusLabel.setBackground(new Color(255, 250, 230));
                 statusLabel.setForeground(new Color(255, 153, 0));
                 break;
@@ -1047,17 +1076,50 @@ public void refreshCarInventory() {
         reservedCarsCount = 0;
         
         for (Car car : cars) {
-            switch (car.getStatus()) {
-                case "Available":
+            switch (car.getStatus().toLowerCase()) {
+                case "available":
                     availableCarsCount++;
                     break;
-                case "Sold":
+                case "sold":
                     soldCarsCount++;
                     break;
-                case "Reserved":
+                case "reserved":
                     reservedCarsCount++;
                     break;
             }
+        }
+    }
+    
+    /**
+     * Navigate to different screens
+     * Override the default implementation to pass admin ID
+     */
+    @Override
+    protected void navigateToScreen(String menuItemText) {
+        dispose(); // Close current window
+        
+        switch (menuItemText) {
+            case "Dashboard":
+                SwingUtilities.invokeLater(() -> new DashboardUI(adminId).setVisible(true));
+                break;
+            case "Car Inventory":
+                SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
+                break;
+            case "Add New Car":
+                SwingUtilities.invokeLater(() -> new AddCarUI(adminId).setVisible(true));
+                break;
+            case "Sold Cars":
+                SwingUtilities.invokeLater(() -> new SoldCarsUI(adminId).setVisible(true));
+                break;
+            case "Audit Logs":
+                SwingUtilities.invokeLater(() -> new AuditLogUI(adminId).setVisible(true));
+                break;
+            default:
+                // For any other menu items, show a message that they are coming soon
+                JOptionPane.showMessageDialog(this, 
+                    "This feature is coming soon!", 
+                    "Under Development", 
+                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
     
@@ -1125,19 +1187,4 @@ public void refreshCarInventory() {
             new CarManagement().setVisible(true);
         });
     }
-    
-    // private void loadCarInventory() {
-    //     try {
-    //         CarDAO carDAO = new CarDAO();
-    //         // Replace with the correct method from CarDAO that fetches all cars
-    //         List<Car> carList = carDAO.fetchAllCars(); // Fetch from DB
-
-    //         // Update your table model or UI with carList
-    //         updateCarTable(carList);
-    //     } catch (Exception ex) {
-    //         JOptionPane.showMessageDialog(this, "Error loading cars: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-    //     }
-    // }
-
-    // Call loadCarInventory() in your constructor or refresh method
 }

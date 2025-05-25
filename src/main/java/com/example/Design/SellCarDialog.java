@@ -388,66 +388,53 @@ public class SellCarDialog extends JDialog {
         totalAmountLabel.setText(formatter.format(totalAmount));
     }
     
-    /**
-     * Complete the sale
-     */
-    private void completeSale() {
-        // Validate required fields
-        if (buyerNameField.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter the buyer's name.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-            buyerNameField.requestFocus();
-            return;
-        }
-        
-        if (buyerContactField.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter the buyer's contact information.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-            buyerContactField.requestFocus();
-            return;
-        }
-        
-        // Confirm sale
-        int result = JOptionPane.showConfirmDialog(this,
-            "Complete the sale of this vehicle?\n\n" +
-            "Vehicle: " + car.getModel() + " " + car.getYear() + "\n" +
-            "Buyer: " + buyerNameField.getText() + "\n" +
-            "Sale Price: " + totalAmountLabel.getText() + "\n\n" +
-            "This action cannot be undone.",
-            "Confirm Sale",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE);
-        
-        if (result == JOptionPane.YES_OPTION) {
-            // Process the sale
-            CarStatusManager carManager = CarStatusManager.getInstance();
-            
-            String salePrice = new DecimalFormat("$#,##0").format((int) salePriceSpinner.getValue());
-            boolean success = carManager.sellCar(
-                car.getId(),
-                buyerNameField.getText().trim(),
-                buyerContactField.getText().trim(),
-                salePrice,
-                (String) paymentMethodCombo.getSelectedItem()
-            );
-            
-            if (success) {
-                saleCompleted = true;
-                
-                JOptionPane.showMessageDialog(this,
-                    "Sale completed successfully!\n\n" +
-                    "The vehicle has been moved to the Sold Cars section.",
-                    "Sale Complete",
-                    JOptionPane.INFORMATION_MESSAGE);
-                
-                dispose();
-            } else {
-                JOptionPane.showMessageDialog(this,
-                    "Error completing sale. Please try again.",
-                    "Sale Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
-        }
+   /**
+ * Complete the sale
+ */
+private void completeSale() {
+    // Validate required fields
+    if (buyerNameField.getText().trim().isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Please enter the buyer's name.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+        buyerNameField.requestFocus();
+        return;
     }
     
+    if (buyerContactField.getText().trim().isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Please enter the buyer's contact information.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+        buyerContactField.requestFocus();
+        return;
+    }
+    
+    // Confirm sale
+    int result = JOptionPane.showConfirmDialog(this,
+        "Complete the sale of this vehicle?\n\n" +
+        "Vehicle: " + car.getModel() + " " + car.getYear() + "\n" +
+        "Buyer: " + buyerNameField.getText() + "\n" +
+        "Sale Price: " + totalAmountLabel.getText() + "\n\n" +
+        "This action cannot be undone.",
+        "Confirm Sale",
+        JOptionPane.YES_NO_OPTION,
+        JOptionPane.QUESTION_MESSAGE);
+    
+    if (result == JOptionPane.YES_OPTION) {
+        // Process the sale using CarManagementIntegration
+        CarManagementIntegration integration = CarManagementIntegration.getInstance();
+        
+        String salePrice = new DecimalFormat("$#,##0").format((int) salePriceSpinner.getValue());
+        boolean success = integration.sellCar(
+            car.getId(),
+            buyerNameField.getText().trim(),
+            buyerContactField.getText().trim(),
+            salePrice,
+            (String) paymentMethodCombo.getSelectedItem()
+        );
+        
+        if (success) {
+            saleCompleted = true;
+            dispose();
+        }
+    }
+}
     /**
      * Check if sale was completed
      */

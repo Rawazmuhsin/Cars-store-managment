@@ -1,5 +1,6 @@
 package com.example.Design;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -82,17 +83,27 @@ public class CarStatusManager {
     public boolean sellCar(int carId, String buyerName, String buyerContact, String salePrice, String paymentMethod) {
         for (CarManagement.Car car : allCars) {
             if (car.getId() == carId) {
+                // Check if car is available for sale
+                if (!car.getStatus().equals("Available") && !car.getStatus().equals("Reserved")) {
+                    System.err.println("Error: Car is not available for sale. Current status: " + car.getStatus());
+                    return false;
+                }
+                
                 // Update car status
                 car.setStatus("Sold");
                 
                 // Create sold car record
-                String saleDate = new java.text.SimpleDateFormat("MMM dd, yyyy").format(new Date());
+                String saleDate = new SimpleDateFormat("MMM dd, yyyy").format(new Date());
                 SoldCarRecord soldRecord = new SoldCarRecord(car, saleDate, salePrice, buyerName, buyerContact, paymentMethod);
                 soldCars.add(soldRecord);
+                
+                System.out.println("Car sold successfully: " + car.getModel() + " to " + buyerName + " for " + salePrice);
                 
                 return true;
             }
         }
+        
+        System.err.println("Error: Car not found with ID: " + carId);
         return false;
     }
     
@@ -110,9 +121,12 @@ public class CarStatusManager {
                     soldCars.removeIf(soldCar -> soldCar.getCar().getId() == carId);
                 }
                 
+                System.out.println("Car status updated successfully: " + car.getModel() + " - " + newStatus);
                 return true;
             }
         }
+        
+        System.err.println("Error: Car not found with ID: " + carId);
         return false;
     }
     
@@ -120,16 +134,47 @@ public class CarStatusManager {
      * Add a new car
      */
     public void addCar(CarManagement.Car car) {
+        // Make sure this car doesn't already exist
+        for (CarManagement.Car existingCar : allCars) {
+            if (existingCar.getId() == car.getId()) {
+                // Update existing car instead of adding
+                existingCar.setModel(car.getModel());
+                existingCar.setYear(car.getYear());
+                existingCar.setType(car.getType());
+                existingCar.setColor(car.getColor());
+                existingCar.setPrice(car.getPrice());
+                existingCar.setStatus(car.getStatus());
+                existingCar.setDateAdded(car.getDateAdded());
+                existingCar.setImagePath(car.getImagePath());
+                System.out.println("Updated existing car: " + car.getModel());
+                return;
+            }
+        }
+        
+        // Otherwise add as new car
         allCars.add(car);
+        System.out.println("Added new car: " + car.getModel());
+        
+        // If car is already sold, add it to sold cars
+        if ("Sold".equals(car.getStatus())) {
+            soldCars.add(new SoldCarRecord(car, car.getDateAdded(), car.getPrice(), "Unknown Buyer", "N/A", "Cash"));
+        }
     }
     
     /**
      * Remove a car completely
      */
     public boolean removeCar(int carId) {
-        allCars.removeIf(car -> car.getId() == carId);
+        boolean removed = allCars.removeIf(car -> car.getId() == carId);
         soldCars.removeIf(soldCar -> soldCar.getCar().getId() == carId);
-        return true;
+        
+        if (removed) {
+            System.out.println("Car removed successfully: ID " + carId);
+        } else {
+            System.err.println("Error: Car not found with ID: " + carId);
+        }
+        
+        return removed;
     }
     
     /**
@@ -141,7 +186,84 @@ public class CarStatusManager {
                 return car;
             }
         }
+        System.err.println("Error: Car not found with ID: " + carId);
         return null;
+    }
+    
+    /**
+     * Update an existing car's details
+     */
+    public boolean updateCar(CarManagement.Car updatedCar) {
+        for (int i = 0; i < allCars.size(); i++) {
+            CarManagement.Car car = allCars.get(i);
+            if (car.getId() == updatedCar.getId()) {
+                // Update car details
+                car.setModel(updatedCar.getModel());
+                car.setYear(updatedCar.getYear());
+                car.setType(updatedCar.getType());
+                car.setColor(updatedCar.getColor());
+                car.setPrice(updatedCar.getPrice());
+                car.setStatus(updatedCar.getStatus());
+                car.setDateAdded(updatedCar.getDateAdded());
+                car.setImagePath(updatedCar.getImagePath());
+                
+                // If status changed to sold, update sold cars list
+                if ("Sold".equals(updatedCar.getStatus()) && !"Sold".equals(car.getStatus())) {
+                    // Add to sold cars if not already there
+                    boolean alreadySold = false;
+                    for (SoldCarRecord soldCar : soldCars) {
+                        if (soldCar.getCar().getId() == car.getId()) {
+                            alreadySold = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!alreadySold) {
+                        soldCars.add(new SoldCarRecord(car, new SimpleDateFormat("MMM dd, yyyy").format(new Date()), 
+                                                      car.getPrice(), "Unknown Buyer", "N/A", "Cash"));
+                    }
+                }
+                
+                // If status changed from sold, update sold cars list
+                if (!"Sold".equals(updatedCar.getStatus()) && "Sold".equals(car.getStatus())) {
+                    soldCars.removeIf(soldCar -> soldCar.getCar().getId() == car.getId());
+                }
+                
+                // Also update the car in any sold car records
+                for (SoldCarRecord soldCar : soldCars) {
+                    if (soldCar.getCar().getId() == car.getId()) {
+                        soldCar.setCar(car);
+                    }
+                }
+                
+                System.out.println("Car updated successfully: " + car.getModel());
+                return true;
+            }
+        }
+        
+        System.err.println("Error: Car not found with ID: " + updatedCar.getId());
+        return false;
+    }
+    
+    /**
+     * Synchronize with database (to be implemented when database is ready)
+     */
+    public void syncWithDatabase() {
+        // This will be implemented to sync in-memory state with database
+        System.out.println("Synchronizing with database...");
+    }
+    
+    /**
+     * Get cars by status
+     */
+    public List<CarManagement.Car> getCarsByStatus(String status) {
+        List<CarManagement.Car> filteredCars = new ArrayList<>();
+        for (CarManagement.Car car : allCars) {
+            if (status.equals(car.getStatus())) {
+                filteredCars.add(car);
+            }
+        }
+        return filteredCars;
     }
     
     /**

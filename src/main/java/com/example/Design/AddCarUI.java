@@ -1,6 +1,12 @@
 package com.example.Design;
+
 import com.example.OOP.backend.CarDAO;
 import com.example.OOP.backend.Car;
+import com.example.OOP.backend.CarModel;
+import com.example.OOP.backend.Manufacturer;
+import com.example.OOP.backend.Specification;
+import com.example.OOP.backend.ServiceResult;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -15,6 +21,7 @@ import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -38,6 +45,10 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+/**
+ * AddCarUI - Form for adding new cars to the inventory
+ * This class handles the UI for adding a new car and saving it to the database
+ */
 public class AddCarUI extends BaseUI {
     
     private JTextField vinField;
@@ -64,21 +75,35 @@ public class AddCarUI extends BaseUI {
     private JLabel dateAddedLabel;
     private String currentDate;
     
+    /**
+     * Constructor with admin ID
+     * @param adminId The ID of the admin user
+     */
     public AddCarUI(int adminId) {
         super(adminId);
         initializeCurrentDate();
     }
     
+    /**
+     * Default constructor
+     */
     public AddCarUI() {
         super();
         initializeCurrentDate();
     }
     
+    /**
+     * Initialize the current date for the form
+     */
     private void initializeCurrentDate() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy 'at' HH:mm");
         currentDate = dateFormat.format(new Date());
     }
     
+    /**
+     * Create a styled text field with consistent appearance
+     * @return A styled JTextField
+     */
     private JTextField createStyledTextField() {
         JTextField field = new JTextField(15);
         field.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -91,6 +116,11 @@ public class AddCarUI extends BaseUI {
         return field;
     }
     
+    /**
+     * Add menu items to the sidebar
+     * Overrides the method in BaseUI
+     * @param menuPanel The panel to add menu items to
+     */
     @Override
     protected void addMenuItems(JPanel menuPanel) {
         addMenuItem(menuPanel, "Dashboard", false);
@@ -102,6 +132,11 @@ public class AddCarUI extends BaseUI {
         addMenuItem(menuPanel, "Audit Logs", false);
     }
     
+    /**
+     * Create the content panel for the form
+     * Overrides the method in BaseUI
+     * @return JPanel containing the content
+     */
     @Override
     protected JPanel createContentPanel() {
         JPanel mainPanel = new JPanel();
@@ -176,6 +211,10 @@ public class AddCarUI extends BaseUI {
         return mainPanel;
     }
     
+    /**
+     * Create the main form panel with all input fields
+     * @return JPanel containing the form
+     */
     private JPanel createFormPanel() {
         RoundedPanel formCard = new RoundedPanel(15, Color.WHITE);
         formCard.setLayout(new BorderLayout());
@@ -532,6 +571,10 @@ public class AddCarUI extends BaseUI {
         return formCard;
     }
     
+    /**
+     * Create the photo upload panel
+     * @return JPanel for uploading car photos
+     */
     private JPanel createPhotoUploadPanel() {
         JPanel photoPanel = new JPanel();
         photoPanel.setLayout(new BoxLayout(photoPanel, BoxLayout.Y_AXIS));
@@ -616,6 +659,9 @@ public class AddCarUI extends BaseUI {
         return photoPanel;
     }
     
+    /**
+     * Choose a photo using file chooser
+     */
     private void choosePhoto() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select Car Photo");
@@ -652,6 +698,9 @@ public class AddCarUI extends BaseUI {
         }
     }
     
+    /**
+     * Remove the selected photo
+     */
     private void removePhoto(JButton removeButton) {
         selectedImagePath = "";
         imageLabel.setIcon(null);
@@ -665,6 +714,9 @@ public class AddCarUI extends BaseUI {
         imageLabel.getParent().repaint();
     }
     
+    /**
+     * Create the form buttons panel
+     */
     private JPanel createFormButtonsPanel() {
         JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         buttonsPanel.setOpaque(false);
@@ -706,6 +758,9 @@ public class AddCarUI extends BaseUI {
         return buttonsPanel;
     }
     
+    /**
+     * Clear the form fields
+     */
     private void clearForm() {
         int result = JOptionPane.showConfirmDialog(this, 
             "Are you sure you want to clear all form data?", 
@@ -755,6 +810,9 @@ public class AddCarUI extends BaseUI {
         }
     }
     
+    /**
+     * Validate form fields before saving
+     */
     private boolean validateForm() {
         if (vinField.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "VIN is required.", "Validation Error", JOptionPane.ERROR_MESSAGE);
@@ -836,96 +894,102 @@ public class AddCarUI extends BaseUI {
         return true;
     }
     
-   private void saveNewCar() {
-    if (!validateForm()) {
-        return;
-    }
-    
-    try {
-        // Get all form data
-        String vin = vinField.getText().trim();
-        String manufacturer = manufacturerField.getText().trim();
-        String model = modelField.getText().trim();
-        Integer year = (Integer) yearSpinner.getValue();
-        String category = (String) categoryComboBox.getSelectedItem();
-        String color = colorField.getText().trim();
-        Double salePrice = (Double) priceSpinner.getValue();
-        Double costPrice = (Double) costSpinner.getValue();
-        Integer mileage = (Integer) mileageSpinner.getValue();
-        String location = locationField.getText().trim();
-        String status = (String) statusComboBox.getSelectedItem();
-        
-        String engineType = engineTypeField.getText().trim();
-        String transmission = (String) transmissionComboBox.getSelectedItem();
-        String fuelType = (String) fuelTypeComboBox.getSelectedItem();
-        Integer horsepower = (Integer) horsepowerSpinner.getValue();
-        Integer seats = (Integer) seatsSpinner.getValue();
-        String fuelEconomy = fuelEconomyField.getText().trim();
-        String features = featuresArea.getText().trim();
-        String notes = notesArea.getText().trim();
-        
-        // === SAVE TO DATABASE ===
-        CarManagementIntegration integration = CarManagementIntegration.getInstance();
-        integration.setCurrentStaffId(adminId); // Set current user
-        
-        boolean success = integration.saveCarFromAddCarUI(
-            vin, manufacturer, model, year, category, color,
-            salePrice, costPrice, mileage, location, engineType,
-            transmission, fuelType, horsepower, seats,
-            fuelEconomy, features, notes, selectedImagePath
-        );
-        
-        if (success) {
-            // === SUCCESS - SAVED TO DATABASE ===
-            String successMessage = "Vehicle Added Successfully to Database!\n\n" +
-                    "VIN: " + vin + "\n" +
-                    "Vehicle: " + manufacturer + " " + model + " " + year + "\n" +
-                    "Color: " + color + "\n" +
-                    "Category: " + category + "\n" +
-                    "Sale Price: $" + String.format("%.2f", salePrice) + "\n" +
-                    "Cost Price: $" + String.format("%.2f", costPrice) + "\n" +
-                    "Status: " + status + "\n" +
-                    "Date Added: " + currentDate + "\n" +
-                    (selectedImagePath.isEmpty() ? "" : "Image: " + new File(selectedImagePath).getName()) +
-                    "\n\n✅ Car has been saved to database and will appear in inventory.";
-            
-            JOptionPane.showMessageDialog(this, 
-                successMessage, 
-                "Success - Database Updated", 
-                JOptionPane.INFORMATION_MESSAGE);
-            
-            int addAnother = JOptionPane.showConfirmDialog(this, 
-                "Vehicle added successfully to database! Would you like to add another vehicle?", 
-                "Add Another Vehicle", 
-                JOptionPane.YES_NO_OPTION);
-            
-            if (addAnother == JOptionPane.YES_OPTION) {
-                clearForm();
-            } else {
-                goBackToInventory(); // Will now show the new car from database
-            }
-        } else {
-            // === FAILURE - NOT SAVED ===
-            JOptionPane.showMessageDialog(this, 
-                "❌ Failed to save vehicle to database.\n" +
-                "Please check your database connection and try again.", 
-                "Database Save Error", 
-                JOptionPane.ERROR_MESSAGE);
+    /**
+     * Save a new car to the database
+     */
+    private void saveNewCar() {
+        if (!validateForm()) {
+            return;
         }
         
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, 
-            "Error saving vehicle to database: " + e.getMessage() + 
-            "\n\nPlease check:\n" +
-            "- Database connection\n" +
-            "- VIN format (17 characters)\n" +
-            "- All required fields", 
-            "Save Error", 
-            JOptionPane.ERROR_MESSAGE);
-        e.printStackTrace();
+        try {
+            // Get all form data
+            String vin = vinField.getText().trim();
+            String manufacturer = manufacturerField.getText().trim();
+            String model = modelField.getText().trim();
+            Integer year = (Integer) yearSpinner.getValue();
+            String category = (String) categoryComboBox.getSelectedItem();
+            String color = colorField.getText().trim();
+            Double salePrice = (Double) priceSpinner.getValue();
+            Double costPrice = (Double) costSpinner.getValue();
+            Integer mileage = (Integer) mileageSpinner.getValue();
+            String location = locationField.getText().trim();
+            String status = (String) statusComboBox.getSelectedItem();
+            
+            String engineType = engineTypeField.getText().trim();
+            String transmission = (String) transmissionComboBox.getSelectedItem();
+            String fuelType = (String) fuelTypeComboBox.getSelectedItem();
+            Integer horsepower = (Integer) horsepowerSpinner.getValue();
+            Integer seats = (Integer) seatsSpinner.getValue();
+            String fuelEconomy = fuelEconomyField.getText().trim();
+            String features = featuresArea.getText().trim();
+            String notes = notesArea.getText().trim();
+            
+            // === SAVE TO DATABASE ===
+            CarManagementIntegration integration = CarManagementIntegration.getInstance();
+            integration.setCurrentStaffId(adminId); // Set current user
+            
+            boolean success = integration.saveCarFromAddCarUI(
+                vin, manufacturer, model, year, category, color,
+                salePrice, costPrice, mileage, location, engineType,
+                transmission, fuelType, horsepower, seats,
+                fuelEconomy, features, notes, selectedImagePath
+            );
+            
+            if (success) {
+                // === SUCCESS - SAVED TO DATABASE ===
+                String successMessage = "Vehicle Added Successfully to Database!\n\n" +
+                        "VIN: " + vin + "\n" +
+                        "Vehicle: " + manufacturer + " " + model + " " + year + "\n" +
+                        "Color: " + color + "\n" +
+                        "Category: " + category + "\n" +
+                        "Sale Price: $" + String.format("%.2f", salePrice) + "\n" +
+                        "Cost Price: $" + String.format("%.2f", costPrice) + "\n" +
+                        "Status: " + status + "\n" +
+                        "Date Added: " + currentDate + "\n" +
+                        (selectedImagePath.isEmpty() ? "" : "Image: " + new File(selectedImagePath).getName()) +
+                        "\n\n✅ Car has been saved to database and will appear in inventory.";
+                
+                JOptionPane.showMessageDialog(this, 
+                    successMessage, 
+                    "Success - Database Updated", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                int addAnother = JOptionPane.showConfirmDialog(this, 
+                    "Vehicle added successfully to database! Would you like to add another vehicle?", 
+                    "Add Another Vehicle", 
+                    JOptionPane.YES_NO_OPTION);
+                
+                if (addAnother == JOptionPane.YES_OPTION) {
+                    clearForm();
+                } else {
+                    goBackToInventory(); // Will now show the new car from database
+                }
+            } else {
+                // === FAILURE - NOT SAVED ===
+                JOptionPane.showMessageDialog(this, 
+                    "❌ Failed to save vehicle to database.\n" +
+                    "Please check your database connection and try again.", 
+                    "Database Save Error", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, 
+                "Error saving vehicle to database: " + e.getMessage() + 
+                "\n\nPlease check:\n" +
+                "- Database connection\n" +
+                "- VIN format (17 characters)\n" +
+                "- All required fields", 
+                "Save Error", 
+                JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
     }
-}
     
+    /**
+     * Navigate back to the inventory screen
+     */
     private void goBackToInventory() {
         if (hasUnsavedChanges()) {
             int result = JOptionPane.showConfirmDialog(this, 
@@ -938,9 +1002,13 @@ public class AddCarUI extends BaseUI {
         }
         
         dispose();
-        SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
+        CarManagement carManagement = new CarManagement(adminId);
+        carManagement.setVisible(true);
     }
     
+    /**
+     * Check if the form has unsaved changes
+     */
     private boolean hasUnsavedChanges() {
         return !vinField.getText().trim().isEmpty() || 
                !manufacturerField.getText().trim().isEmpty() || 
@@ -949,6 +1017,9 @@ public class AddCarUI extends BaseUI {
                !selectedImagePath.isEmpty();
     }
     
+    /**
+     * Main method to test the Add Car UI
+     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
@@ -958,45 +1029,5 @@ public class AddCarUI extends BaseUI {
             }
             new AddCarUI().setVisible(true);
         });
-    }
-
-    private void handleAddCar() {
-        // Gather car info from UI fields
-        String make = manufacturerField.getText();
-        String model = modelField.getText();
-        int year = Integer.parseInt(yearSpinner.getValue().toString());
-        double price = Double.parseDouble(priceSpinner.getValue().toString());
-        double cost = Double.parseDouble(costSpinner.getValue().toString());
-        int mileage = Integer.parseInt(mileageSpinner.getValue().toString());
-        String color = colorField.getText();
-        String category = categoryComboBox.getSelectedItem().toString();
-        String status = statusComboBox.getSelectedItem().toString();
-        String engineType = engineTypeField.getText();
-        String transmission = transmissionComboBox.getSelectedItem().toString();
-        String fuelType = fuelTypeComboBox.getSelectedItem().toString();
-        int horsepower = Integer.parseInt(horsepowerSpinner.getValue().toString());
-        int seats = Integer.parseInt(seatsSpinner.getValue().toString());
-        double fuelEconomy = Double.parseDouble(fuelEconomyField.getText());
-        String features = featuresArea.getText();
-        String notes = notesArea.getText();
-        
-        // Adjust the constructor parameters to match the Car class definition.
-        // Example below assumes a typical constructor; update as needed to match your Car.java:
-                // Car newCar = new Car(make, model, year, color, category, price, cost, mileage, status, engineType, transmission, fuelType, horsepower, seats, fuelEconomy, features, notes, selectedImagePath);
-
-        // try {
-        //     CarDAO carDAO = new CarDAO();
-        //     carDAO.addCar(newCar); // Insert into DB
-
-        //     JOptionPane.showMessageDialog(this, "Car added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-
-        //     // Optionally, clear fields or close window
-        //     dispose();
-
-        //     // Open/refresh CarManagement UI
-        //     SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
-        // } catch (Exception ex) {
-        //     JOptionPane.showMessageDialog(this, "Error adding car: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        // }
     }
 }
