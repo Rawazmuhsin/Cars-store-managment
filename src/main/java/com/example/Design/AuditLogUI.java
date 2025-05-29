@@ -159,6 +159,9 @@ public class AuditLogUI extends BaseUI {
         exportButton.setFont(new Font("Arial", Font.BOLD, 14));
         exportButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         exportButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+           exportButton.setOpaque(true);  // Add this
+        exportButton.setBorderPainted(false);  // Add this
+        
         
         exportButton.addActionListener(e -> exportLogs());
         exportButton.addMouseListener(new MouseAdapter() {
@@ -180,6 +183,9 @@ public class AuditLogUI extends BaseUI {
         clearButton.setFont(new Font("Arial", Font.BOLD, 14));
         clearButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         clearButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+          clearButton.setOpaque(true);  // Add this
+        clearButton.setBorderPainted(false);  // Add this
+        
         
         clearButton.addActionListener(e -> clearOldLogs());
         clearButton.addMouseListener(new MouseAdapter() {

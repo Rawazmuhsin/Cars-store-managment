@@ -61,8 +61,24 @@ public class EditCarUI extends BaseUI {
      */
     public EditCarUI(CarManagement.Car car, int adminId) {
         super(adminId);
-        this.car = car;
-        this.selectedImagePath = car.getImagePath();
+        
+        // Check if car is null to prevent NullPointerException
+        if (car == null) {
+            System.err.println("ERROR: Car object is null in EditCarUI constructor");
+            JOptionPane.showMessageDialog(null, 
+                "Error: Could not retrieve car details for editing.", 
+                "Data Error", JOptionPane.ERROR_MESSAGE);
+                
+            // Redirect back to inventory after error message
+            SwingUtilities.invokeLater(() -> {
+                dispose();
+                new CarManagement(adminId).setVisible(true);
+            });
+        } else {
+            this.car = car;
+            this.selectedImagePath = car.getImagePath();
+            System.out.println("Editing car: " + car.getModel() + " (ID: " + car.getId() + ")");
+        }
     }
     
     /**
@@ -71,8 +87,24 @@ public class EditCarUI extends BaseUI {
      */
     public EditCarUI(CarManagement.Car car) {
         super();
-        this.car = car;
-        this.selectedImagePath = car.getImagePath();
+        
+        // Check if car is null to prevent NullPointerException
+        if (car == null) {
+            System.err.println("ERROR: Car object is null in EditCarUI constructor");
+            JOptionPane.showMessageDialog(null, 
+                "Error: Could not retrieve car details for editing.", 
+                "Data Error", JOptionPane.ERROR_MESSAGE);
+                
+            // Redirect back to inventory after error message
+            SwingUtilities.invokeLater(() -> {
+                dispose();
+                new CarManagement().setVisible(true);
+            });
+        } else {
+            this.car = car;
+            this.selectedImagePath = car.getImagePath();
+            System.out.println("Editing car: " + car.getModel() + " (ID: " + car.getId() + ")");
+        }
     }
     
     /**
@@ -99,6 +131,30 @@ public class EditCarUI extends BaseUI {
      */
     @Override
     protected JPanel createContentPanel() {
+        // Check if car is null before proceeding
+        if (car == null) {
+            JPanel errorPanel = new JPanel();
+            errorPanel.setBackground(LIGHT_GRAY_BG);
+            errorPanel.setLayout(new BorderLayout());
+            
+            JLabel errorLabel = new JLabel("Error: Car data is unavailable for editing", SwingConstants.CENTER);
+            errorLabel.setFont(new Font("Arial", Font.BOLD, 18));
+            errorLabel.setForeground(Color.RED);
+            
+            JButton backButton = new JButton("Back to Inventory");
+            backButton.addActionListener(e -> goBackToInventory());
+            
+            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            buttonPanel.setOpaque(false);
+            buttonPanel.add(backButton);
+            
+            errorPanel.add(errorLabel, BorderLayout.CENTER);
+            errorPanel.add(buttonPanel, BorderLayout.SOUTH);
+            
+            return errorPanel;
+        }
+        
+        // Normal content creation if car is not null
         JPanel mainPanel = new JPanel();
         mainPanel.setBackground(LIGHT_GRAY_BG);
         mainPanel.setLayout(new BorderLayout());
@@ -244,7 +300,13 @@ public class EditCarUI extends BaseUI {
         gbc.gridy = 2;
         formContent.add(new JLabel("Year:"), gbc);
         gbc.gridx = 3;
-        SpinnerNumberModel yearModel = new SpinnerNumberModel(Integer.parseInt(car.getYear()), 1990, 2030, 1);
+        int year = 2023; // Default
+        try {
+            year = Integer.parseInt(car.getYear());
+        } catch (NumberFormatException e) {
+            // Keep default if year is not a valid number
+        }
+        SpinnerNumberModel yearModel = new SpinnerNumberModel(year, 1990, 2030, 1);
         yearSpinner = new JSpinner(yearModel);
         yearSpinner.setFont(new Font("Arial", Font.PLAIN, 14));
         formContent.add(yearSpinner, gbc);
@@ -256,7 +318,17 @@ public class EditCarUI extends BaseUI {
         gbc.gridx = 3;
         String[] types = {"Sedan", "SUV", "Truck", "Electric", "Luxury", "Sports", "Hatchback", "Van"};
         typeComboBox = new JComboBox<>(types);
-        typeComboBox.setSelectedItem(car.getType());
+        
+        // Set the selected type
+        if (car.getType() != null) {
+            for (int i = 0; i < types.length; i++) {
+                if (types[i].equalsIgnoreCase(car.getType())) {
+                    typeComboBox.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
+        
         typeComboBox.setFont(new Font("Arial", Font.PLAIN, 14));
         typeComboBox.setBackground(Color.WHITE);
         formContent.add(typeComboBox, gbc);
@@ -279,7 +351,13 @@ public class EditCarUI extends BaseUI {
         gbc.gridy = 5;
         formContent.add(new JLabel("Price:"), gbc);
         gbc.gridx = 3;
-        priceField = new JTextField(car.getPrice().replace("$", "").replace(",", ""), 20);
+        String priceStr = car.getPrice();
+        if (priceStr != null) {
+            priceStr = priceStr.replace("$", "").replace(",", "");
+        } else {
+            priceStr = "0";
+        }
+        priceField = new JTextField(priceStr, 20);
         priceField.setFont(new Font("Arial", Font.PLAIN, 14));
         priceField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(200, 200, 200)),
@@ -294,7 +372,17 @@ public class EditCarUI extends BaseUI {
         gbc.gridx = 3;
         String[] statuses = {"Available", "Reserved", "Sold"};
         statusComboBox = new JComboBox<>(statuses);
-        statusComboBox.setSelectedItem(car.getStatus());
+        
+        // Set the selected status
+        if (car.getStatus() != null) {
+            for (int i = 0; i < statuses.length; i++) {
+                if (statuses[i].equalsIgnoreCase(car.getStatus())) {
+                    statusComboBox.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
+        
         statusComboBox.setFont(new Font("Arial", Font.PLAIN, 14));
         statusComboBox.setBackground(Color.WHITE);
         formContent.add(statusComboBox, gbc);
@@ -304,8 +392,19 @@ public class EditCarUI extends BaseUI {
         gbc.gridy = 7;
         formContent.add(new JLabel("Date Added:"), gbc);
         gbc.gridx = 3;
-        Date today = new Date();
-        SpinnerDateModel dateModel = new SpinnerDateModel(today, null, today, java.util.Calendar.DAY_OF_MONTH);
+        
+        // Parse date string to Date object or use current date if parsing fails
+        Date dateAdded = new Date();
+        try {
+            if (car.getDateAdded() != null) {
+                java.text.SimpleDateFormat format = new java.text.SimpleDateFormat("MMM dd, yyyy");
+                dateAdded = format.parse(car.getDateAdded());
+            }
+        } catch (Exception e) {
+            System.err.println("Error parsing date: " + e.getMessage());
+        }
+        
+        SpinnerDateModel dateModel = new SpinnerDateModel(dateAdded, null, new Date(), java.util.Calendar.DAY_OF_MONTH);
         dateAddedSpinner = new JSpinner(dateModel);
         dateAddedSpinner.setEditor(new JSpinner.DateEditor(dateAddedSpinner, "MMM dd, yyyy"));
         dateAddedSpinner.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -353,7 +452,7 @@ public class EditCarUI extends BaseUI {
     }
     
     /**
-     * Create photo upload panel
+     * Create the photo upload panel
      */
     private JPanel createPhotoUploadPanel() {
         JPanel photoPanel = new JPanel();
@@ -394,6 +493,8 @@ public class EditCarUI extends BaseUI {
         uploadButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         uploadButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         uploadButton.setMaximumSize(new Dimension(200, 40));
+        uploadButton.setOpaque(true);
+        uploadButton.setBorderPainted(false);
         
         // Upload button action
         uploadButton.addActionListener(e -> choosePhoto());
@@ -421,11 +522,13 @@ public class EditCarUI extends BaseUI {
         removeButton.setBackground(PRIMARY_RED);
         removeButton.setForeground(Color.WHITE);
         removeButton.setFocusPainted(false);
-        removeButton.setFont(new Font("Arial", Font.PLAIN, 12));
+        removeButton.setFont(new Font("Arial", Font.PLAIN, 11));
         removeButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
         removeButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         removeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         removeButton.setMaximumSize(new Dimension(150, 30));
+        removeButton.setOpaque(true);
+        removeButton.setBorderPainted(false);
         removeButton.setVisible(!selectedImagePath.isEmpty() && !selectedImagePath.startsWith("placeholder"));
         
         removeButton.addActionListener(e -> removePhoto(removeButton));
@@ -447,7 +550,7 @@ public class EditCarUI extends BaseUI {
      */
     private void loadExistingImage() {
         try {
-            if (!selectedImagePath.isEmpty() && !selectedImagePath.startsWith("placeholder")) {
+            if (selectedImagePath != null && !selectedImagePath.isEmpty() && !selectedImagePath.startsWith("placeholder")) {
                 ImageIcon originalIcon = new ImageIcon(selectedImagePath);
                 if (originalIcon.getIconWidth() > 0) {
                     Image scaledImage = originalIcon.getImage().getScaledInstance(260, 180, Image.SCALE_SMOOTH);
@@ -457,6 +560,7 @@ public class EditCarUI extends BaseUI {
                 }
             }
         } catch (Exception e) {
+            System.err.println("Error loading image: " + e.getMessage());
             // Fall through to placeholder
         }
         
@@ -543,12 +647,15 @@ public class EditCarUI extends BaseUI {
         cancelButton.setFont(new Font("Arial", Font.BOLD, 14));
         cancelButton.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
         cancelButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        cancelButton.setOpaque(true);
+        cancelButton.setBorderPainted(false);
         
         cancelButton.addActionListener(e -> goBackToDetails());
         
         // Sell Car button (only show if car is available or reserved)
         JButton sellButton = null;
-        if ("Available".equals(car.getStatus()) || "Reserved".equals(car.getStatus())) {
+        if (car.getStatus() != null && 
+            ("Available".equalsIgnoreCase(car.getStatus()) || "Reserved".equalsIgnoreCase(car.getStatus()))) {
             sellButton = new JButton("Sell Car");
             sellButton.setBackground(PRIMARY_YELLOW);
             sellButton.setForeground(Color.WHITE);
@@ -556,6 +663,8 @@ public class EditCarUI extends BaseUI {
             sellButton.setFont(new Font("Arial", Font.BOLD, 14));
             sellButton.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
             sellButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            sellButton.setOpaque(true);
+            sellButton.setBorderPainted(false);
             
             sellButton.addActionListener(e -> sellCar());
         }
@@ -568,6 +677,8 @@ public class EditCarUI extends BaseUI {
         deleteButton.setFont(new Font("Arial", Font.BOLD, 14));
         deleteButton.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
         deleteButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        deleteButton.setOpaque(true);
+        deleteButton.setBorderPainted(false);
         
         deleteButton.addActionListener(e -> deleteVehicle());
         
@@ -579,6 +690,8 @@ public class EditCarUI extends BaseUI {
         saveButton.setFont(new Font("Arial", Font.BOLD, 14));
         saveButton.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
         saveButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        saveButton.setOpaque(true);
+        saveButton.setBorderPainted(false);
         
         saveButton.addActionListener(e -> saveChanges());
         
@@ -616,14 +729,15 @@ public class EditCarUI extends BaseUI {
      */
     private String generateInitialNotes() {
         StringBuilder notes = new StringBuilder();
+        String carType = car.getType() != null ? car.getType() : "";
         
-        if ("Electric".equals(car.getType())) {
+        if ("Electric".equalsIgnoreCase(carType)) {
             notes.append("Electric vehicle with advanced technology and zero emissions. ");
-        } else if ("Luxury".equals(car.getType())) {
+        } else if ("Luxury".equalsIgnoreCase(carType)) {
             notes.append("Luxury vehicle with premium features and materials. ");
-        } else if ("Sports".equals(car.getType())) {
+        } else if ("Sports".equalsIgnoreCase(carType)) {
             notes.append("High-performance sports vehicle for enthusiasts. ");
-        } else if ("Truck".equals(car.getType())) {
+        } else if ("Truck".equalsIgnoreCase(carType)) {
             notes.append("Heavy-duty truck with excellent capabilities. ");
         } else {
             notes.append("Reliable and efficient vehicle for daily use. ");
@@ -636,75 +750,90 @@ public class EditCarUI extends BaseUI {
     }
     
     /**
- * Save changes to the car
- * This method should be in your EditCarUI class
- */
-private void saveChanges() {
-    // Validate required fields
-    if (modelField.getText().trim().isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Please enter the car model.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-        modelField.requestFocus();
-        return;
-    }
-    
-    if (colorField.getText().trim().isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Please enter the color.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-        colorField.requestFocus();
-        return;
-    }
-    
-    if (priceField.getText().trim().isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Please enter the price.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-        priceField.requestFocus();
-        return;
-    }
-    
-    // Validate price format
-    try {
-        double price = Double.parseDouble(priceField.getText().replace(",", ""));
-        if (price <= 0) {
-            throw new NumberFormatException("Price must be positive");
+     * Save changes to the car
+     */
+    private void saveChanges() {
+        // Validate required fields
+        if (modelField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter the car model.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            modelField.requestFocus();
+            return;
         }
-    } catch (NumberFormatException e) {
-        JOptionPane.showMessageDialog(this, "Please enter a valid price.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-        priceField.requestFocus();
-        return;
+        
+        if (colorField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter the color.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            colorField.requestFocus();
+            return;
+        }
+        
+        if (priceField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter the price.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            priceField.requestFocus();
+            return;
+        }
+        
+        // Validate price format
+        try {
+            double price = Double.parseDouble(priceField.getText().replace(",", ""));
+            if (price <= 0) {
+                throw new NumberFormatException("Price must be positive");
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Please enter a valid price.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            priceField.requestFocus();
+            return;
+        }
+        
+        // Update car object with new values
+        car.setModel(modelField.getText().trim());
+        car.setYear(yearSpinner.getValue().toString());
+        car.setType((String) typeComboBox.getSelectedItem());
+        car.setColor(colorField.getText().trim());
+        
+        // Format price
+        try {
+            double priceValue = Double.parseDouble(priceField.getText().replace(",", ""));
+            car.setPrice(String.format("$%,.0f", priceValue));
+        } catch (NumberFormatException e) {
+            car.setPrice("$" + priceField.getText().trim());
+        }
+        
+        car.setStatus((String) statusComboBox.getSelectedItem());
+        
+        // Format date
+        Date selectedDate = (Date) dateAddedSpinner.getValue();
+        java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("MMM dd, yyyy");
+        car.setDateAdded(formatter.format(selectedDate));
+        
+        // Update image path
+        car.setImagePath(selectedImagePath);
+        
+        // Use CarManagementIntegration to update the car in the database
+        try {
+            CarManagementIntegration integration = CarManagementIntegration.getInstance();
+            boolean success = integration.updateCar(car);
+            
+            if (success) {
+                JOptionPane.showMessageDialog(this, 
+                    "Car updated successfully!", 
+                    "Update Successful", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                    
+                // Go back to details page
+                goBackToDetails();
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "Failed to update car. Please try again.", 
+                    "Update Failed", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, 
+                "Error updating car: " + e.getMessage(), 
+                "Update Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
     }
-    
-    // Update car object with new values
-    car.setModel(modelField.getText().trim());
-    car.setYear(yearSpinner.getValue().toString());
-    car.setType((String) typeComboBox.getSelectedItem());
-    car.setColor(colorField.getText().trim());
-    
-    // Format price
-    try {
-        double priceValue = Double.parseDouble(priceField.getText().replace(",", ""));
-        car.setPrice(String.format("$%,.0f", priceValue));
-    } catch (NumberFormatException e) {
-        car.setPrice("$" + priceField.getText().trim());
-    }
-    
-    car.setStatus((String) statusComboBox.getSelectedItem());
-    
-    // Format date
-    Date selectedDate = (Date) dateAddedSpinner.getValue();
-    java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("MMM dd, yyyy");
-    car.setDateAdded(formatter.format(selectedDate));
-    
-    // Update image path
-    car.setImagePath(selectedImagePath);
-    
-    // Use CarManagementIntegration to update the car in the database
-    CarManagementIntegration integration = CarManagementIntegration.getInstance();
-    boolean success = integration.updateCar(car);
-    
-    if (success) {
-        // Go back to details page
-        goBackToDetails();
-    }
-    // Error messages are handled by the integration class
-}
     
     /**
      * Delete the vehicle
@@ -719,14 +848,24 @@ private void saveChanges() {
             JOptionPane.WARNING_MESSAGE);
         
         if (result == JOptionPane.YES_OPTION) {
-            // In a real application, this would delete from the database
-            JOptionPane.showMessageDialog(this, 
-                "Vehicle has been deleted successfully.", 
-                "Deleted", 
-                JOptionPane.INFORMATION_MESSAGE);
+            // Delete from database
+            CarManagementIntegration integration = CarManagementIntegration.getInstance();
+            boolean success = integration.deleteCar(car.getId());
             
-            // Go back to inventory
-            goBackToInventory();
+            if (success) {
+                JOptionPane.showMessageDialog(this, 
+                    "Vehicle has been deleted successfully.", 
+                    "Deleted", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                    
+                // Go back to inventory
+                goBackToInventory();
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "Failed to delete vehicle. Please try again.", 
+                    "Delete Failed", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
     
@@ -735,35 +874,85 @@ private void saveChanges() {
      */
     private void goBackToDetails() {
         dispose(); // Close current window
-        SwingUtilities.invokeLater(() -> new ShowCarUI(car, adminId).setVisible(true));
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // Get the most up-to-date car information before opening the details screen
+                CarManagementIntegration integration = CarManagementIntegration.getInstance();
+                CarManagement.Car refreshedCar = integration.getCarById(car.getId());
+                
+                if (refreshedCar != null) {
+                    new ShowCarUI(refreshedCar, adminId).setVisible(true);
+                } else {
+                    // Fall back to the current car object if refresh fails
+                    new ShowCarUI(car, adminId).setVisible(true);
+                }
+            } catch (Exception e) {
+                System.err.println("Error navigating to ShowCarUI: " + e.getMessage());
+                e.printStackTrace();
+                // Fall back to the current car object if an exception occurs
+                new ShowCarUI(car, adminId).setVisible(true);
+            }
+        });
     }
     
     /**
      * Go back to inventory page
      */
     private void goBackToInventory() {
-        dispose(); // Close current window
+        if (hasUnsavedChanges()) {
+            int result = JOptionPane.showConfirmDialog(this, 
+                "You have unsaved changes. Are you sure you want to leave?", 
+                "Unsaved Changes", 
+                JOptionPane.YES_NO_OPTION);
+            if (result != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
+        
+        dispose();
         SwingUtilities.invokeLater(() -> new CarManagement(adminId).setVisible(true));
     }
     
     /**
-     * Main method to test the Edit Car UI
+     * Check if the form has unsaved changes
      */
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                // Set look and feel to system look and feel
-                javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            
-            // Create a sample car for testing
-            CarManagement.Car sampleCar = new CarManagement.Car(
-                1, "Tesla Model 3", "2023", "Electric", "Black", "$47,000", "Available", "May 12, 2025", "placeholder_tesla.jpg"
-            );
-            
-            new EditCarUI(sampleCar).setVisible(true);
-        });
+    private boolean hasUnsavedChanges() {
+        // Check if model has changed
+        if (!modelField.getText().equals(car.getModel())) {
+            return true;
+        }
+        
+        // Check if year has changed
+        if (!yearSpinner.getValue().toString().equals(car.getYear())) {
+            return true;
+        }
+        
+        // Check if type has changed
+        if (!typeComboBox.getSelectedItem().equals(car.getType())) {
+            return true;
+        }
+        
+        // Check if color has changed
+        if (!colorField.getText().equals(car.getColor())) {
+            return true;
+        }
+        
+        // Check if price has changed (removing formatting)
+        String currentPrice = car.getPrice().replace("$", "").replace(",", "");
+        if (!priceField.getText().replace(",", "").equals(currentPrice)) {
+            return true;
+        }
+        
+        // Check if status has changed
+        if (!statusComboBox.getSelectedItem().equals(car.getStatus())) {
+            return true;
+        }
+        
+        // Check if image has changed
+        if (!selectedImagePath.equals(car.getImagePath())) {
+            return true;
+        }
+        
+        return false;
     }
 }

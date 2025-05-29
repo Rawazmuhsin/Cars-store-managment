@@ -406,7 +406,7 @@ customRangeButton.setContentAreaFilled(true);
         refreshButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         refreshButton.addActionListener(e -> refreshFinancialData());
         refreshButton.setOpaque(true);  // Add this
-refreshButton.setBorderPainted(false);  // Add this
+        refreshButton.setBorderPainted(false);  // Add this
 refreshButton.setContentAreaFilled(true); 
         
         filterControls.add(monthLabel);

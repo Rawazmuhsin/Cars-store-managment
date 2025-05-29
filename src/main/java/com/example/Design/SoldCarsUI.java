@@ -298,53 +298,60 @@ public class SoldCarsUI extends BaseUI {
     /**
      * Load sold cars data from database
      */
-    private void loadSoldCarsData() {
-        try {
-            // Get statistics from integration
-            salesStats = integration.getSalesStatistics();
+   /**
+ * Load sold cars data from database
+ */
+private void loadSoldCarsData() {
+    try {
+        // Make sure integration is properly initialized
+        integration = SoldCarsIntegration.getInstance();
+        integration.setCurrentStaffId(adminId);
+        
+        // Get statistics from integration
+        salesStats = integration.getSalesStatistics();
+        
+        // Get sold cars data from integration
+        List<Object[]> soldCarsData = integration.getSoldCarsData();
+        soldCars = new ArrayList<>();
+        
+        // Convert database rows to SoldCar objects
+        for (int i = 0; i < soldCarsData.size(); i++) {
+            Object[] row = soldCarsData.get(i);
             
-            // Get sold cars data from integration
-            List<Object[]> soldCarsData = integration.getSoldCarsData();
-            soldCars = new ArrayList<>();
+            // Create SoldCar from database row data
+            // row format: [model, year, type, date, price, buyer, "View"]
+            SoldCar soldCar = new SoldCar(
+                i + 1, // ID
+                (String) row[0], // model
+                (String) row[1], // year
+                (String) row[2], // type
+                "N/A", // color (not in database query)
+                (String) row[4], // sale price
+                (String) row[3], // sale date
+                (String) row[5], // buyer name
+                "N/A", // buyer contact (not in database query)
+                "N/A", // payment method (not in database query)
+                "placeholder_car.jpg" // image path
+            );
             
-            // Convert database rows to SoldCar objects
-            for (int i = 0; i < soldCarsData.size(); i++) {
-                Object[] row = soldCarsData.get(i);
-                
-                // Create SoldCar from database row data
-                // row format: [model, year, type, date, price, buyer, "View"]
-                SoldCar soldCar = new SoldCar(
-                    i + 1, // ID
-                    (String) row[0], // model
-                    (String) row[1], // year
-                    (String) row[2], // type
-                    "N/A", // color (not in database query)
-                    (String) row[4], // sale price
-                    (String) row[3], // sale date
-                    (String) row[5], // buyer name
-                    "N/A", // buyer contact (not in database query)
-                    "N/A", // payment method (not in database query)
-                    "placeholder_car.jpg" // image path
-                );
-                
-                soldCars.add(soldCar);
-            }
-            
-        } catch (Exception e) {
-            System.err.println("Error loading sold cars data: " + e.getMessage());
-            e.printStackTrace();
-            
-            // Initialize empty data if error occurs
-            soldCars = new ArrayList<>();
-            salesStats = new SoldCarsIntegration.SalesStatistics();
-            
-            // Show error message
-            JOptionPane.showMessageDialog(this,
-                "Error loading sold cars data from database.\n" + e.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE);
+            soldCars.add(soldCar);
         }
+        
+    } catch (Exception e) {
+        System.err.println("Error loading sold cars data: " + e.getMessage());
+        e.printStackTrace();
+        
+        // Initialize empty data if error occurs
+        soldCars = new ArrayList<>();
+        salesStats = new SoldCarsIntegration.SalesStatistics();
+        
+        // Show error message
+        JOptionPane.showMessageDialog(this,
+            "Error loading sold cars data from database.\n" + e.getMessage(),
+            "Database Error",
+            JOptionPane.ERROR_MESSAGE);
     }
+}
     
     /**
      * Create cars grid panel with car cards

@@ -177,6 +177,8 @@ public class DashboardUI extends BaseUI {
         testDbButton.setFocusPainted(false);
         testDbButton.setFont(new Font("Arial", Font.BOLD, 12));
         testDbButton.setPreferredSize(new Dimension(120, 40));
+           testDbButton.setOpaque(true);  // Add this
+        testDbButton.setBorderPainted(false);  // Add this
         testDbButton.addActionListener(e -> DatabaseTestUtility.testAndShowDatabaseStatus());
         
         JButton refreshButton = new JButton("Refresh Dashboard");
@@ -185,6 +187,8 @@ public class DashboardUI extends BaseUI {
         refreshButton.setFocusPainted(false);
         refreshButton.setFont(new Font("Arial", Font.BOLD, 14));
         refreshButton.setPreferredSize(new Dimension(160, 40));
+         refreshButton.setOpaque(true);  // Add this
+        refreshButton.setBorderPainted(false);  // Add this
         
         buttonPanel.add(testDbButton);
         buttonPanel.add(refreshButton);

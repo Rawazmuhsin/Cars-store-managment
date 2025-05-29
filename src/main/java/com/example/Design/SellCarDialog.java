@@ -1,37 +1,11 @@
 package com.example.Design;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.*;
+import java.awt.event.*;
 import java.text.DecimalFormat;
 import java.util.Date;
-
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.SpinnerDateModel;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 
 /**
  * Sell Car Dialog for processing car sales
@@ -63,7 +37,20 @@ public class SellCarDialog extends JDialog {
      * @param car Car to sell
      */
     public SellCarDialog(JFrame parent, CarManagement.Car car) {
-        super(parent, "Sell Vehicle - " + car.getModel() + " " + car.getYear(), true);
+        super(parent, "Sell Vehicle", true);
+        
+        // Check for null car to prevent NullPointerException
+        if (car == null) {
+            System.err.println("ERROR: Car object is null in SellCarDialog constructor");
+            JOptionPane.showMessageDialog(parent, 
+                "Error: Could not retrieve car details for sale.", 
+                "Data Error", JOptionPane.ERROR_MESSAGE);
+                
+            // Set a flag to close dialog after displaying error
+            SwingUtilities.invokeLater(() -> dispose());
+            return;
+        }
+        
         this.car = car;
         
         initializeDialog();
@@ -74,6 +61,8 @@ public class SellCarDialog extends JDialog {
         setSize(600, 700);
         setLocationRelativeTo(parent);
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        
+        System.out.println("Selling car: " + car.getModel() + " (ID: " + car.getId() + ")");
     }
     
     /**
@@ -82,6 +71,7 @@ public class SellCarDialog extends JDialog {
     private void initializeDialog() {
         setLayout(new BorderLayout());
         getContentPane().setBackground(LIGHT_GRAY_BG);
+        setTitle("Sell Vehicle - " + car.getModel() + " " + car.getYear());
     }
     
     /**
@@ -113,7 +103,14 @@ public class SellCarDialog extends JDialog {
         ));
         
         // Sale price spinner
-        int currentPrice = Integer.parseInt(car.getPrice().replace("$", "").replace(",", ""));
+        int currentPrice = 30000; // Default if parsing fails
+        try {
+            String priceStr = car.getPrice().replace("$", "").replace(",", "");
+            currentPrice = Integer.parseInt(priceStr);
+        } catch (Exception e) {
+            System.err.println("Error parsing price: " + e.getMessage());
+        }
+        
         SpinnerNumberModel priceModel = new SpinnerNumberModel(currentPrice, 1000, 1000000, 100);
         salePriceSpinner = new JSpinner(priceModel);
         salePriceSpinner.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -336,6 +333,8 @@ public class SellCarDialog extends JDialog {
         cancelButton.setFont(new Font("Arial", Font.BOLD, 14));
         cancelButton.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
         cancelButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        cancelButton.setOpaque(true);
+        cancelButton.setBorderPainted(false);
         
         // Complete Sale button
         JButton completeSaleButton = new JButton("Complete Sale");
@@ -345,6 +344,8 @@ public class SellCarDialog extends JDialog {
         completeSaleButton.setFont(new Font("Arial", Font.BOLD, 14));
         completeSaleButton.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
         completeSaleButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        completeSaleButton.setOpaque(true);
+        completeSaleButton.setBorderPainted(false);
         
         buttonsPanel.add(cancelButton);
         buttonsPanel.add(completeSaleButton);
@@ -378,94 +379,95 @@ public class SellCarDialog extends JDialog {
      * Update tax and total calculations
      */
     private void updateCalculations() {
-        int salePrice = (int) salePriceSpinner.getValue();
-        double taxRate = 0.08; // 8% tax
-        double taxAmount = salePrice * taxRate;
-        double totalAmount = salePrice + taxAmount;
-        
-        DecimalFormat formatter = new DecimalFormat("$#,##0.00");
-        taxAmountLabel.setText(formatter.format(taxAmount));
-        totalAmountLabel.setText(formatter.format(totalAmount));
-    }
-    
-   /**
- * Complete the sale
- */
-private void completeSale() {
-    // Validate required fields
-    if (buyerNameField.getText().trim().isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Please enter the buyer's name.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-        buyerNameField.requestFocus();
-        return;
-    }
-    
-    if (buyerContactField.getText().trim().isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Please enter the buyer's contact information.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-        buyerContactField.requestFocus();
-        return;
-    }
-    
-    // Confirm sale
-    int result = JOptionPane.showConfirmDialog(this,
-        "Complete the sale of this vehicle?\n\n" +
-        "Vehicle: " + car.getModel() + " " + car.getYear() + "\n" +
-        "Buyer: " + buyerNameField.getText() + "\n" +
-        "Sale Price: " + totalAmountLabel.getText() + "\n\n" +
-        "This action cannot be undone.",
-        "Confirm Sale",
-        JOptionPane.YES_NO_OPTION,
-        JOptionPane.QUESTION_MESSAGE);
-    
-    if (result == JOptionPane.YES_OPTION) {
-        // Process the sale using CarManagementIntegration
-        CarManagementIntegration integration = CarManagementIntegration.getInstance();
-        
-        String salePrice = new DecimalFormat("$#,##0").format((int) salePriceSpinner.getValue());
-        boolean success = integration.sellCar(
-            car.getId(),
-            buyerNameField.getText().trim(),
-            buyerContactField.getText().trim(),
-            salePrice,
-            (String) paymentMethodCombo.getSelectedItem()
-        );
-        
-        if (success) {
-            saleCompleted = true;
-            dispose();
+        try {
+            int salePrice = (int) salePriceSpinner.getValue();
+            double taxRate = 0.08; // 8% tax
+            double taxAmount = salePrice * taxRate;
+            double totalAmount = salePrice + taxAmount;
+            
+            DecimalFormat formatter = new DecimalFormat("$#,##0.00");
+            taxAmountLabel.setText(formatter.format(taxAmount));
+            totalAmountLabel.setText(formatter.format(totalAmount));
+        } catch (Exception e) {
+            System.err.println("Error updating calculations: " + e.getMessage());
+            taxAmountLabel.setText("$0.00");
+            totalAmountLabel.setText("$0.00");
         }
     }
-}
+    
+    /**
+     * Complete the sale
+     */
+    private void completeSale() {
+        // Validate required fields
+        if (buyerNameField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter the buyer's name.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            buyerNameField.requestFocus();
+            return;
+        }
+        
+        if (buyerContactField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter the buyer's contact information.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            buyerContactField.requestFocus();
+            return;
+        }
+        
+        // Confirm sale
+        int result = JOptionPane.showConfirmDialog(this,
+            "Complete the sale of this vehicle?\n\n" +
+            "Vehicle: " + car.getModel() + " " + car.getYear() + "\n" +
+            "Buyer: " + buyerNameField.getText() + "\n" +
+            "Sale Price: " + totalAmountLabel.getText() + "\n\n" +
+            "This action cannot be undone.",
+            "Confirm Sale",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE);
+        
+        if (result == JOptionPane.YES_OPTION) {
+            // Process the sale using CarManagementIntegration
+            CarManagementIntegration integration = CarManagementIntegration.getInstance();
+            
+            try {
+                String salePrice = new DecimalFormat("$#,##0").format((int) salePriceSpinner.getValue());
+                boolean success = integration.sellCar(
+                    car.getId(),
+                    buyerNameField.getText().trim(),
+                    buyerContactField.getText().trim(),
+                    salePrice,
+                    (String) paymentMethodCombo.getSelectedItem()
+                );
+                
+                if (success) {
+                    saleCompleted = true;
+                    JOptionPane.showMessageDialog(this,
+                        "Sale completed successfully!\n\n" +
+                        "Vehicle: " + car.getModel() + " " + car.getYear() + "\n" +
+                        "Buyer: " + buyerNameField.getText() + "\n" +
+                        "Sale Price: " + salePrice,
+                        "Sale Complete",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    dispose();
+                } else {
+                    JOptionPane.showMessageDialog(this,
+                        "Failed to complete the sale. Please try again.",
+                        "Sale Failed",
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this,
+                    "Error processing sale: " + e.getMessage(),
+                    "Sale Error",
+                    JOptionPane.ERROR_MESSAGE);
+                System.err.println("Error in completeSale: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+    
     /**
      * Check if sale was completed
      */
     public boolean isSaleCompleted() {
         return saleCompleted;
-    }
-    
-    /**
-     * Test the dialog
-     */
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            
-            // Create a sample car for testing
-            CarManagement.Car sampleCar = new CarManagement.Car(
-                1, "Toyota Camry", "2023", "Sedan", "Silver", "$28,500", "Available", "May 15, 2025", "placeholder_toyota.jpg"
-            );
-            
-            JFrame frame = new JFrame();
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(400, 300);
-            frame.setLocationRelativeTo(null);
-            frame.setVisible(true);
-            
-            SellCarDialog dialog = new SellCarDialog(frame, sampleCar);
-            dialog.setVisible(true);
-        });
     }
 }

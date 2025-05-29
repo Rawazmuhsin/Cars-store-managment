@@ -2,7 +2,6 @@ package com.example.OOP.backend;
 
 
 import com.example.Database.DatabaseConnection;
-import com.example.OOP.backend.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;

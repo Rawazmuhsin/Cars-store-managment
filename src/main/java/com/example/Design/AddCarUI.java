@@ -1,11 +1,6 @@
 package com.example.Design;
 
-import com.example.OOP.backend.CarDAO;
-import com.example.OOP.backend.Car;
-import com.example.OOP.backend.CarModel;
-import com.example.OOP.backend.Manufacturer;
-import com.example.OOP.backend.Specification;
-import com.example.OOP.backend.ServiceResult;
+
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -21,7 +16,6 @@ import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -614,6 +608,9 @@ public class AddCarUI extends BaseUI {
         uploadButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         uploadButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         uploadButton.setMaximumSize(new Dimension(150, 35));
+         uploadButton.setOpaque(true);  // Add this
+        uploadButton.setBorderPainted(false);  // Add this
+        
         
         uploadButton.addActionListener(e -> choosePhoto());
         
@@ -644,6 +641,9 @@ public class AddCarUI extends BaseUI {
         removeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         removeButton.setMaximumSize(new Dimension(120, 25));
         removeButton.setVisible(false);
+          removeButton.setOpaque(true);  // Add this
+        removeButton.setBorderPainted(false);  // Add this
+        
         
         removeButton.addActionListener(e -> removePhoto(removeButton));
         
@@ -738,6 +738,9 @@ public class AddCarUI extends BaseUI {
         cancelButton.setFont(new Font("Arial", Font.BOLD, 14));
         cancelButton.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
         cancelButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+         cancelButton.setOpaque(true);  // Add this
+        cancelButton.setBorderPainted(false);  // Add this
+        
         
         cancelButton.addActionListener(e -> goBackToInventory());
         
@@ -748,6 +751,9 @@ public class AddCarUI extends BaseUI {
         saveButton.setFont(new Font("Arial", Font.BOLD, 14));
         saveButton.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
         saveButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+         saveButton.setOpaque(true);  // Add this
+        saveButton.setBorderPainted(false);  // Add this
+        
         
         saveButton.addActionListener(e -> saveNewCar());
         

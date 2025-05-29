@@ -1,10 +1,7 @@
 package com.example.OOP.backend;
 
 
-import com.example.OOP.backend.CarDAO;
-import com.example.OOP.backend.SalesDAO;
-import com.example.OOP.backend.AuditLogDAO;
-import com.example.OOP.backend.*;
+
 import java.math.BigDecimal;
 import java.util.List;
 
