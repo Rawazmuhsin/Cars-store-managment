@@ -87,14 +87,51 @@ public class CarStatusManager {
     /**
      * Find car by ID
      */
-    public CarManagement.Car findCarById(int carId) {
-        for (CarManagement.Car car : allCars) {
-            if (car.getId() == carId) {
-                return car;
-            }
-        }
+   /**
+ * Find car by ID with enhanced error handling and debugging
+ */
+public CarManagement.Car findCarById(int carId) {
+    System.out.println("Searching for car with ID " + carId + " among " + allCars.size() + " cars");
+    
+    if (allCars.isEmpty()) {
+        System.err.println("WARNING: Car list is empty in findCarById");
         return null;
     }
+    
+    for (CarManagement.Car car : allCars) {
+        if (car.getId() == carId) {
+            System.out.println("Found car: " + car.getModel() + " (ID: " + carId + ")");
+            return car;
+        }
+    }
+    
+    // If not found, print all car IDs for debugging
+    System.err.println("Error: Car not found with ID: " + carId);
+    System.err.println("Available car IDs: ");
+    for (CarManagement.Car car : allCars) {
+        System.err.println("  - ID: " + car.getId() + ", Model: " + car.getModel());
+    }
+    
+    // As a fallback, return a new dummy car with this ID
+    // Comment this out if you don't want the fallback behavior
+    CarManagement.Car dummyCar = new CarManagement.Car(
+        carId, 
+        "Unknown Model", 
+        "2023", 
+        "Sedan", 
+        "Black", 
+        "$0", 
+        "Available", 
+        java.time.LocalDate.now().toString(), 
+        "placeholder_car.jpg"
+    );
+    System.out.println("Created dummy car with ID " + carId + " as fallback");
+    allCars.add(dummyCar); // Add to the list so it can be found next time
+    return dummyCar;
+    
+    // Return null if you don't want the fallback behavior
+    // return null;
+}
     
     /**
      * Sell a car

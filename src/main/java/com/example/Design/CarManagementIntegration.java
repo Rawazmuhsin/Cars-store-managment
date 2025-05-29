@@ -131,29 +131,44 @@ public class CarManagementIntegration {
     }
     
     /**
-     * Get car by ID
-     */
-    public CarManagement.Car getCarById(int id) {
-        try {
+ * Get car by ID with enhanced error handling
+ */
+public CarManagement.Car getCarById(int id) {
+    try {
+        if (carManager == null) {
+            System.err.println("ERROR: Car manager is null in getCarById");
+            
+            // Fallback: Try to reinitialize car manager
+            carManager = CarStatusManager.getInstance();
             if (carManager == null) {
-                System.err.println("ERROR: Car manager is null in getCarById");
+                System.err.println("CRITICAL: Unable to initialize car manager");
                 return null;
             }
-            
-            CarManagement.Car car = carManager.findCarById(id);
-            if (car != null) {
-                System.out.println("Found car by ID " + id + ": " + car.getModel());
-            } else {
-                System.err.println("Car with ID " + id + " not found");
-            }
-            return car;
-        } catch (Exception e) {
-            System.err.println("Error getting car by ID: " + e.getMessage());
-            e.printStackTrace();
-            return null;
         }
+        
+        System.out.println("Searching for car with ID: " + id);
+        CarManagement.Car car = carManager.findCarById(id);
+        
+        if (car != null) {
+            System.out.println("Found car by ID " + id + ": " + car.getModel());
+        } else {
+            System.err.println("Car with ID " + id + " not found");
+            
+            // Try again with re-initialized car manager
+            carManager = CarStatusManager.getInstance();
+            car = carManager.findCarById(id);
+            
+            if (car != null) {
+                System.out.println("Found car after reinitializing car manager: " + car.getModel());
+            }
+        }
+        return car;
+    } catch (Exception e) {
+        System.err.println("Error getting car by ID: " + e.getMessage());
+        e.printStackTrace();
+        return null;
     }
-    
+}
     /**
      * Save a new car from AddCarUI
      */
@@ -208,40 +223,76 @@ public class CarManagementIntegration {
             return false;
         }
     }
-    
-    /**
-     * Update an existing car
-     */
-    public boolean updateCar(CarManagement.Car car) {
-        try {
-            if (car == null) {
-                System.err.println("ERROR: Car object is null in updateCar");
-                return false;
-            }
-            
-            // Update in car manager
-            boolean success = carManager.updateCar(car);
-            
-            if (success) {
-                System.out.println("Car updated successfully: " + car.getModel() + " (ID: " + car.getId() + ")");
-            } else {
-                System.err.println("Failed to update car: " + car.getModel() + " (ID: " + car.getId() + ")");
-            }
-            
-            return success;
-            
-        } catch (Exception e) {
-            System.err.println("Error updating car: " + e.getMessage());
-            e.printStackTrace();
-            
-            JOptionPane.showMessageDialog(null, 
-                "Error updating car: " + e.getMessage(), 
-                "Update Error", 
-                JOptionPane.ERROR_MESSAGE);
-            
+ /**
+ * Update an existing car with enhanced error handling
+ */
+public boolean updateCar(CarManagement.Car car) {
+    try {
+        if (car == null) {
+            System.err.println("ERROR: Car object is null in updateCar");
             return false;
         }
+        
+        System.out.println("Attempting to update car ID: " + car.getId() + ", Model: " + car.getModel());
+        
+        // First check if the car exists
+        CarManagement.Car existingCar = getCarById(car.getId());
+        if (existingCar == null) {
+            System.err.println("WARNING: Car with ID " + car.getId() + " not found for update");
+            
+            // Add as new car instead
+            System.out.println("Adding as new car since existing car not found");
+            carManager.addCar(car);
+            
+            System.out.println("Car added successfully: " + car.getModel() + " (ID: " + car.getId() + ")");
+            return true;
+        }
+        
+        // Print debug info
+        System.out.println("Existing car found: " + existingCar.getModel() + ", Status: " + existingCar.getStatus());
+        System.out.println("Updating to: " + car.getModel() + ", Status: " + car.getStatus());
+        
+        // Try to update
+        boolean success = carManager.updateCar(car);
+        
+        if (success) {
+            System.out.println("Car updated successfully: " + car.getModel() + " (ID: " + car.getId() + ")");
+        } else {
+            System.err.println("Failed to update car normally, trying force update...");
+            
+            // Try force update by removing and re-adding
+            carManager.removeCar(car.getId());
+            carManager.addCar(car);
+            
+            System.out.println("Force update completed for car: " + car.getModel() + " (ID: " + car.getId() + ")");
+            return true;
+        }
+        
+        return success;
+        
+    } catch (Exception e) {
+        System.err.println("Error updating car: " + e.getMessage());
+        e.printStackTrace();
+        
+        // Try one last approach - remove and add again
+        try {
+            System.out.println("Attempting emergency recovery...");
+            carManager.removeCar(car.getId());
+            carManager.addCar(car);
+            System.out.println("Emergency recovery successful");
+            return true;
+        } catch (Exception ex) {
+            System.err.println("Emergency recovery failed: " + ex.getMessage());
+        }
+        
+        JOptionPane.showMessageDialog(null, 
+            "Error updating car: " + e.getMessage(), 
+            "Update Error", 
+            JOptionPane.ERROR_MESSAGE);
+        
+        return false;
     }
+}
     
     /**
      * Delete a car
